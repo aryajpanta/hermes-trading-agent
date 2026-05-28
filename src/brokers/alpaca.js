@@ -85,19 +85,32 @@ export async function getAccount() {
 /**
  * Place a market order.
  */
-export async function placeOrder({ symbol, qty, side, type = 'market', timeInForce = 'day', limitPrice, stopLoss, takeProfit }) {
+// Crypto symbols require "BTC/USD" format; detect by checking for no slash and known crypto-like symbols
+function normalizeSymbol(symbol, assetClass) {
+  if (assetClass === 'crypto' && !symbol.includes('/')) {
+    return `${symbol}/USD`;
+  }
+  return symbol;
+}
+
+export async function placeOrder({ symbol, qty, side, type = 'market', timeInForce, assetClass, limitPrice, stopLoss, takeProfit }) {
   if (!alpaca) throw new Error('Alpaca not connected');
 
+  const isCrypto = assetClass === 'crypto' || symbol.includes('/');
+  // Crypto only supports gtc/ioc; equities default to day
+  const tif = timeInForce || (isCrypto ? 'gtc' : 'day');
+
   const order = {
-    symbol: symbol,
+    symbol: normalizeSymbol(symbol, assetClass),
     qty: qty,
-    side: side,       // 'buy' or 'sell'
-    type: type,       // 'market', 'limit', 'stop', 'stop_limit'
-    time_in_force: timeInForce,
+    side: side,
+    type: type,
+    time_in_force: tif,
   };
 
   if (limitPrice) order.limit_price = limitPrice;
-  if (stopLoss) {
+  // Bracket orders (stop_loss/take_profit) are not supported for crypto on Alpaca
+  if (stopLoss && !isCrypto) {
     order.order_class = 'bracket';
     order.stop_loss = { stop_price: stopLoss };
     if (takeProfit) {

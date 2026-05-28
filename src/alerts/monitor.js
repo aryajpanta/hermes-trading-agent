@@ -130,10 +130,10 @@ export async function runAlertMonitor() {
         try {
           const alpacaOrder = await alpaca.placeOrder({
             symbol: alert.symbol,
-            qty: quantity.toFixed(4),
+            assetClass: alert.assetClass || 'crypto',
+            qty: quantity.toFixed(8),
             side: alert.action,
             type: 'market',
-            timeInForce: 'day',
             stopLoss: stopLoss,
             takeProfit: takeProfit,
           });
