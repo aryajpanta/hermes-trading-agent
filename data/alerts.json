@@ -1,0 +1,90 @@
+[
+  {
+    "id": "btc_breakout",
+    "symbol": "BTC",
+    "assetClass": "crypto",
+    "condition": "gte",
+    "value": 72000,
+    "action": "buy",
+    "message": "BTC bullish momentum",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "btc_dip_buy",
+    "symbol": "BTC",
+    "assetClass": "crypto",
+    "condition": "lte",
+    "value": 71000,
+    "action": "buy",
+    "message": "BTC dip buy opportunity",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "eth_breakout",
+    "symbol": "ETH",
+    "assetClass": "crypto",
+    "condition": "gte",
+    "value": 2050,
+    "action": "buy",
+    "message": "ETH bullish breakout",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "eth_dip",
+    "symbol": "ETH",
+    "assetClass": "crypto",
+    "condition": "lte",
+    "value": 1950,
+    "action": "buy",
+    "message": "ETH dip buy",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "sol_breakout",
+    "symbol": "SOL",
+    "assetClass": "crypto",
+    "condition": "gte",
+    "value": 160,
+    "action": "buy",
+    "message": "SOL breakout",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "sol_dip",
+    "symbol": "SOL",
+    "assetClass": "crypto",
+    "condition": "lte",
+    "value": 140,
+    "action": "buy",
+    "message": "SOL dip accumulation",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "aapl_momentum",
+    "symbol": "AAPL",
+    "assetClass": "stock",
+    "condition": "gte",
+    "value": 312,
+    "action": "buy",
+    "message": "AAPL momentum trade",
+    "repeatable": true,
+    "triggered": false
+  },
+  {
+    "id": "spy_momentum",
+    "symbol": "SPY",
+    "assetClass": "stock",
+    "condition": "gte",
+    "value": 755,
+    "action": "buy",
+    "message": "SPY bullish continuation",
+    "repeatable": true,
+    "triggered": false
+  }
+]

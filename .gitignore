@@ -1,0 +1,7 @@
+node_modules/
+data/trades/
+data/reviews/
+data/cycles.json
+*.log
+.env
+.DS_Store
