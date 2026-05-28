@@ -19,9 +19,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "unpkg.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", "api.coingecko.com", "api.binance.com", "*.alpaca.markets"],
+      connectSrc: ["'self'", "https://api.coingecko.com", "https://api.binance.com", "https://*.alpaca.markets", "https://query1.finance.yahoo.com"],
       imgSrc: ["'self'", "data:"],
       fontSrc: ["'self'", "data:"],
     },
