@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { handleWebhook, getTradingViewSetupGuide } from '../tradingview/webhook.js';
 import { tick, handleTradingViewAlert } from '../papertrading/engine.js';
-import { fetchPrice } from '../data/market.js';
+import { fetchPrice, fetchHistoricalData } from '../data/market.js';
 import { getPortfolio } from '../papertrading/portfolio.js';
 import store from '../data/store.js';
 import * as perf from '../analytics/performance.js';
@@ -207,6 +207,26 @@ router.get('/api/webhook/alerts', (req, res) => {
   const alerts = store.read('webhook_alerts') || [];
   const limit = parseInt(req.query.limit) || 20;
   res.json(alerts.slice(-limit).reverse());
+});
+
+// Multi-symbol price fetch for dashboard watchlist
+router.get('/api/prices', async (req, res) => {
+  const symbols = (req.query.symbols || 'BTC,ETH,SOL').split(',');
+  const classes = (req.query.classes || '').split(',');
+  const results = {};
+  await Promise.all(symbols.map(async (s, i) => {
+    const assetClass = classes[i] || (s.length <= 4 && ['BTC','ETH','SOL','ADA','DOGE'].includes(s.toUpperCase()) ? 'crypto' : 'stock');
+    const price = await fetchPrice(s.trim(), assetClass);
+    results[s.trim().toUpperCase()] = { price, assetClass };
+  }));
+  res.json(results);
+});
+
+// Historical OHLCV for charting
+router.get('/api/history', async (req, res) => {
+  const { symbol = 'BTC', class: assetClass = 'crypto', days = '30' } = req.query;
+  const candles = await fetchHistoricalData(symbol, assetClass, parseInt(days));
+  res.json(candles);
 });
 
 // Diagnostic: test data sources

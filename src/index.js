@@ -1,29 +1,34 @@
 #!/usr/bin/env node
 
-/**
- * Hermes Trading Agent — Main Server
- *
- * A self-improving trading agent that:
- * 1. Receives TradingView webhook alerts
- * 2. Executes paper trades with configurable strategy
- * 3. Tracks performance metrics (Sharpe, win rate, profit factor, drawdown)
- * 4. Self-improves via Hermes Agent weekly review cycles
- * 5. Runs 24/7 on Railway
- */
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import { fileURLToPath } from 'url';
+import { join, dirname } from 'path';
 import getConfig from './config/index.js';
 import routes from './api/routes.js';
 import * as alpaca from './brokers/alpaca.js';
 
 const config = getConfig();
 const app = express();
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "unpkg.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", "api.coingecko.com", "api.binance.com", "*.alpaca.markets"],
+      imgSrc: ["'self'", "data:"],
+      fontSrc: ["'self'", "data:"],
+    },
+  },
+}));
 app.use(cors());
+app.use(express.static(join(__dirname, 'public')));
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
