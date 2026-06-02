@@ -29,10 +29,10 @@ export function getPortfolio() {
 
 export function savePortfolio(portfolio) {
   portfolio.updatedAt = new Date().toISOString();
-  if (portfolio.totalValue) {
-    if (portfolio.totalValue > portfolio.peakBalance) {
-      portfolio.peakBalance = portfolio.totalValue;
-    }
+  const totalValue = getTotalValue(portfolio);
+  portfolio.totalValue = totalValue;
+  if (totalValue > portfolio.peakBalance) {
+    portfolio.peakBalance = totalValue;
   }
   store.write('portfolio', portfolio);
 }
@@ -50,6 +50,15 @@ export function hasOpenPosition(portfolio, symbol) {
 }
 
 export function openPosition(portfolio, { symbol, assetClass, side, quantity, entryPrice, stopLoss, takeProfit, reason }) {
+  const cost = quantity * entryPrice;
+  const currentBalance = portfolio.balances?.USD || 0;
+  if (currentBalance < cost) {
+    throw new Error(`Insufficient USD balance to open ${symbol} position. Cost: $${cost.toFixed(2)}, Balance: $${currentBalance.toFixed(2)}`);
+  }
+
+  // Deduct cost from cash balance
+  portfolio.balances.USD = currentBalance - cost;
+
   const position = {
     id: `${symbol}_${Date.now()}`,
     symbol,

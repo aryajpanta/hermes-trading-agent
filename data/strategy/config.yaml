@@ -10,35 +10,41 @@ name: "Hermes Aggressive Multi-Asset Strategy"
 assets:
   - symbol: "BTC"
     assetClass: "crypto"
-    weight: 0.30
+    weight: 0.2
   - symbol: "ETH"
     assetClass: "crypto"
-    weight: 0.25
+    weight: 0.2
   - symbol: "SOL"
     assetClass: "crypto"
-    weight: 0.20
+    weight: 0.15
   - symbol: "AAPL"
     assetClass: "stock"
-    weight: 0.10
+    weight: 0.1
   - symbol: "SPY"
     assetClass: "stock"
-    weight: 0.10
+    weight: 0.1
   - symbol: "EURUSD"
     assetClass: "forex"
     weight: 0.05
+  - symbol: "NVDA"
+    assetClass: "stock"
+    weight: 0.1
+  - symbol: "DOGE"
+    assetClass: "crypto"
+    weight: 0.1
 
 # === Goals ===
 goals:
-  minSharpe: 1.0            # Lower threshold to keep aggression
+  minSharpe: 1               # Lower threshold to keep aggression
   maxDrawdown: 25            # Can tolerate more downside
   targetReturn30d: 25        # Higher return target
   minWinRate: 40             # Accept lower win rate for bigger wins
   maxConsecutiveLosses: 6
 
 # === Indicator Parameters (Tighter = More Signals) ===
-rsiPeriod: 10               # Faster RSI = more responsive
-rsiOversold: 25             # Wider oversold range
-rsiOverbought: 65           # Tighter overbought = more sell signals
+rsiPeriod: 11               # Faster RSI = more responsive
+rsiOversold: 30             # Oversold range
+rsiOverbought: 60           # Tighter overbought = more sell signals
 
 macdFast: 8                 # Faster MACD
 macdSlow: 21                # Shorter slow MA
@@ -47,14 +53,14 @@ macdSignal: 7               # Quicker signal line
 bbPeriod: 16                # Shorter BB period
 bbStdDev: 1.8               # Tighter bands = more breakouts
 
-signalThreshold: 15         # Half default = way more trades
+signalThreshold: 10         # Lower = way more trades
 
 # === Risk Management (Aggressive) ===
-riskPerTrade: 0.03          # 3% risk per trade (double default)
-stopLossPct: 0.025          # 2.5% stop loss
-riskRewardRatio: 2.5        # Target higher reward
+riskPerTrade: 0.025         # 2.5% risk per trade
+stopLossPct: 0.02           # 2% stop loss
+riskRewardRatio: 3          # Target higher reward
 volumeThreshold: 1.2        # Lower volume confirmation bar
-maxOpenPositions: 8         # More simultaneous positions
+maxOpenPositions: 10        # More simultaneous positions
 
 # === Signal Weights (Heavier on momentum) ===
 weights:
@@ -73,6 +79,6 @@ weights:
 selfImprove:
   reviewCadence: "daily"
   optimizeOneAtATime: true
-  paperTrade: true
-  liveTrading: false
+  paperTrade: false
+  liveTrading: true
   firstCycleReadOnly: false  # AUTO-OPTIMIZE — start learning immediately

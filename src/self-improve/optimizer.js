@@ -8,6 +8,8 @@ import path from 'path';
 import YAML from 'yaml';
 import store from '../data/store.js';
 import getConfig from '../config/index.js';
+import { fetchHistoricalData } from '../data/market.js';
+import { runBacktest } from '../strategy/backtest.js';
 
 const config = getConfig();
 const STRATEGY_PATH = config.strategy?.strategyConfigPath ||
@@ -203,7 +205,82 @@ export function applyOptimization(optimization) {
 }
 
 /**
- * Full optimization cycle: review → propose → apply.
+ * Run historical backtests to validate a proposed optimization.
+ */
+export async function validateOptimization(proposal) {
+  const strategy = loadStrategy();
+  if (!strategy) return { valid: false, error: 'No strategy config found' };
+
+  // Skip validation if type is 'reset' or if there's no proposed parameter change
+  if (proposal.type === 'reset' || !proposal.parameter) {
+    return { valid: true, note: 'Skipped validation for reset/exploratory proposal' };
+  }
+
+  const assets = strategy.assets || [
+    { symbol: 'BTC', assetClass: 'crypto' },
+    { symbol: 'ETH', assetClass: 'crypto' },
+    { symbol: 'SOL', assetClass: 'crypto' }
+  ];
+
+  // Prepare a copy of the strategy config with the proposed parameter applied
+  const proposedStrategy = JSON.parse(JSON.stringify(strategy));
+  setNested(proposedStrategy, proposal.parameter, proposal.proposedValue);
+
+  let baselineReturn = 0;
+  let baselineSharpe = 0;
+  let proposedReturn = 0;
+  let proposedSharpe = 0;
+  
+  const assetRuns = [];
+
+  for (const asset of assets) {
+    const candles = await fetchHistoricalData(asset.symbol, asset.assetClass, 30);
+    if (!candles || candles.length < 50) continue;
+
+    const baseResult = runBacktest(candles, strategy);
+    const propResult = runBacktest(candles, proposedStrategy);
+
+    baselineReturn += baseResult.totalReturn;
+    baselineSharpe += baseResult.sharpeRatio;
+    proposedReturn += propResult.totalReturn;
+    proposedSharpe += propResult.sharpeRatio;
+
+    assetRuns.push({
+      symbol: asset.symbol,
+      base: { return: baseResult.totalReturn, sharpe: baseResult.sharpeRatio },
+      prop: { return: propResult.totalReturn, sharpe: propResult.sharpeRatio }
+    });
+  }
+
+  const numTested = assetRuns.length;
+  if (numTested === 0) {
+    return { valid: false, error: 'Insufficient historical data for validation' };
+  }
+
+  const avgBaseReturn = baselineReturn / numTested;
+  const avgBaseSharpe = baselineSharpe / numTested;
+  const avgPropReturn = proposedReturn / numTested;
+  const avgPropSharpe = proposedSharpe / numTested;
+
+  // Decision rule: proposed return or Sharpe must be better, and neither should be significantly worse
+  const improvesReturn = avgPropReturn > avgBaseReturn;
+  const improvesSharpe = avgPropSharpe > avgBaseSharpe;
+  const notWorse = avgPropReturn >= avgBaseReturn - 0.1 && avgPropSharpe >= avgBaseSharpe - 0.1;
+
+  const valid = (improvesReturn || improvesSharpe) && notWorse;
+
+  return {
+    valid,
+    metrics: {
+      baseline: { avgReturn: Math.round(avgBaseReturn * 100) / 100, avgSharpe: Math.round(avgBaseSharpe * 100) / 100 },
+      proposed: { avgReturn: Math.round(avgPropReturn * 100) / 100, avgSharpe: Math.round(avgPropSharpe * 100) / 100 },
+    },
+    assetRuns
+  };
+}
+
+/**
+ * Full optimization cycle: review → propose → validate → apply.
  */
 export async function runOptimizationCycle() {
   // Run review first
@@ -213,12 +290,33 @@ export async function runOptimizationCycle() {
   // Then propose optimization based on review
   const proposal = proposeOptimization(review);
 
-  // Apply it
-  const result = applyOptimization(proposal);
+  // Validate it using backtester
+  const validation = await validateOptimization(proposal);
+
+  let result;
+  if (validation.valid) {
+    result = applyOptimization(proposal);
+    result.validation = validation;
+  } else {
+    // If not valid, reject the change
+    result = {
+      ...proposal,
+      applied: false,
+      appliedAt: new Date().toISOString(),
+      reason: 'Validation failed: Proposed parameters did not improve historical backtest performance',
+      validation
+    };
+    
+    // Log the rejected optimization record for history
+    const optimizations = store.read('optimizations') || [];
+    optimizations.push(result);
+    store.write('optimizations', optimizations);
+  }
 
   return {
     review,
     proposal,
+    validation,
     result,
   };
 }
@@ -227,6 +325,7 @@ export default {
   loadStrategy,
   saveStrategy,
   proposeOptimization,
+  validateOptimization,
   applyOptimization,
   runOptimizationCycle,
   OPTIMIZABLE_PARAMS,

@@ -71,18 +71,25 @@ export async function tick(strategyConfig) {
     const existingPos = portfolio.hasOpenPosition(port, sig.symbol);
 
     if (sig.signal === 'buy' && !existingPos) {
-      const quantity = config.paperBalance / sig.entryPrice * 0.1; // 10% of balance per trade
-      const pos = portfolio.openPosition(port, {
-        symbol: sig.symbol,
-        assetClass: sig.assetClass,
-        side: 'long',
-        quantity: quantity > 0 ? quantity : 0.001,
-        entryPrice: sig.entryPrice,
-        stopLoss: sig.stopLoss,
-        takeProfit: sig.takeProfit,
-        reason: sig.reason,
-      });
-      executions.push({ type: 'entry', symbol: sig.symbol, price: sig.entryPrice, confidence: sig.confidence, reason: sig.reason });
+      const currentCash = port.balances?.USD || 0;
+      const quantity = currentCash / sig.entryPrice * 0.1; // 10% of remaining cash balance per trade
+      if (quantity <= 0) continue;
+      
+      try {
+        const pos = portfolio.openPosition(port, {
+          symbol: sig.symbol,
+          assetClass: sig.assetClass,
+          side: 'long',
+          quantity: quantity,
+          entryPrice: sig.entryPrice,
+          stopLoss: sig.stopLoss,
+          takeProfit: sig.takeProfit,
+          reason: sig.reason,
+        });
+        executions.push({ type: 'entry', symbol: sig.symbol, price: sig.entryPrice, confidence: sig.confidence, reason: sig.reason });
+      } catch (err) {
+        console.error(`[PaperTrading] Failed to open position for ${sig.symbol}: ${err.message}`);
+      }
     } else if (sig.signal === 'sell' && existingPos) {
       const pos = port.positions.find(p => p.symbol === sig.symbol && p.status === 'open');
       if (pos) {
@@ -163,16 +170,22 @@ export async function handleTradingViewAlert(alert) {
       const stopLoss = calcStopLoss(price, 'long', stopLossPct);
       const takeProfit = calcTakeProfit(price, 'long', riskRewardRatio * stopLossPct);
 
-      const pos = portfolio.openPosition(port, {
-        symbol,
-        assetClass: alert.assetClass || 'crypto',
-        side: 'long',
-        quantity,
-        entryPrice: price,
-        stopLoss,
-        takeProfit,
-        reason: `TradingView alert: ${alert.message || alert.action}`,
-      });
+      let pos;
+      try {
+        pos = portfolio.openPosition(port, {
+          symbol,
+          assetClass: alert.assetClass || 'crypto',
+          side: 'long',
+          quantity,
+          entryPrice: price,
+          stopLoss,
+          takeProfit,
+          reason: `TradingView alert: ${alert.message || alert.action}`,
+        });
+      } catch (err) {
+        console.error(`[Webhook] Failed to open position: ${err.message}`);
+        return { success: false, error: err.message };
+      }
 
       // Log the webhook execution
       store.append('webhook_executions', {

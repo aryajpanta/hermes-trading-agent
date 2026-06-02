@@ -8,7 +8,9 @@
     "action": "buy",
     "message": "BTC bullish momentum",
     "repeatable": true,
-    "triggered": false
+    "triggered": false,
+    "lastTriggered": "2026-06-01T12:19:04.766Z",
+    "triggerPrice": 72005
   },
   {
     "id": "btc_dip_buy",
@@ -19,7 +21,9 @@
     "action": "buy",
     "message": "BTC dip buy opportunity",
     "repeatable": true,
-    "triggered": false
+    "triggered": true,
+    "lastTriggered": "2026-06-02T13:30:14.278Z",
+    "triggerPrice": 68941
   },
   {
     "id": "eth_breakout",
@@ -63,7 +67,9 @@
     "action": "buy",
     "message": "SOL dip accumulation",
     "repeatable": true,
-    "triggered": false
+    "triggered": true,
+    "lastTriggered": "2026-06-01T12:19:04.853Z",
+    "triggerPrice": 80.45
   },
   {
     "id": "aapl_momentum",
@@ -74,7 +80,9 @@
     "action": "buy",
     "message": "AAPL momentum trade",
     "repeatable": true,
-    "triggered": false
+    "triggered": false,
+    "lastTriggered": "2026-06-01T12:19:05.067Z",
+    "triggerPrice": 312.06
   },
   {
     "id": "spy_momentum",
@@ -85,6 +93,8 @@
     "action": "buy",
     "message": "SPY bullish continuation",
     "repeatable": true,
-    "triggered": false
+    "triggered": true,
+    "lastTriggered": "2026-06-01T12:19:05.121Z",
+    "triggerPrice": 756.48
   }
 ]

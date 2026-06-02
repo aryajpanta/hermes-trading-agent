@@ -99,9 +99,10 @@ export async function placeOrder({ symbol, qty, side, type = 'market', timeInFor
   const isCrypto = assetClass === 'crypto' || symbol.includes('/');
   // Crypto only supports gtc/ioc; equities default to day
   const tif = timeInForce || (isCrypto ? 'gtc' : 'day');
+  const normSym = normalizeSymbol(symbol, assetClass);
 
   const order = {
-    symbol: normalizeSymbol(symbol, assetClass),
+    symbol: normSym,
     qty: qty,
     side: side,
     type: type,
@@ -119,6 +120,26 @@ export async function placeOrder({ symbol, qty, side, type = 'market', timeInFor
   }
 
   const result = await alpaca.createOrder(order);
+
+  // If crypto, handle bracket parameters locally
+  if (isCrypto) {
+    const brackets = store.read('alpaca/crypto_brackets') || {};
+    const symKey = normSym.toUpperCase();
+    if (side === 'buy' && (stopLoss || takeProfit)) {
+      brackets[symKey] = {
+        symbol: symKey,
+        stopLoss: stopLoss ? parseFloat(stopLoss) : null,
+        takeProfit: takeProfit ? parseFloat(takeProfit) : null,
+        qty: parseFloat(qty),
+        createdAt: new Date().toISOString(),
+      };
+      store.write('alpaca/crypto_brackets', brackets);
+    } else if (side === 'sell') {
+      // Clear brackets upon selling
+      delete brackets[symKey];
+      store.write('alpaca/crypto_brackets', brackets);
+    }
+  }
 
   // Log the order
   store.append('alpaca/orders', {

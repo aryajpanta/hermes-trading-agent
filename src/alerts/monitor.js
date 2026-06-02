@@ -9,6 +9,7 @@ import * as portfolio from '../papertrading/portfolio.js';
 import { calcStopLoss, calcTakeProfit } from '../strategy/risk.js';
 import * as alpaca from '../brokers/alpaca.js';
 import getConfig from '../config/index.js';
+import { checkCryptoBrackets } from '../brokers/bracket_monitor.js';
 
 const config = getConfig();
 
@@ -51,9 +52,17 @@ function checkCondition(currentPrice, condition, threshold) {
  * Run the alert monitor — checks all rules and executes triggered ones.
  */
 export async function runAlertMonitor() {
+  // Check local crypto brackets for Alpaca first
+  let bracketResult = null;
+  try {
+    bracketResult = await checkCryptoBrackets();
+  } catch (err) {
+    console.error(`[AlertMonitor] Bracket check failed: ${err.message}`);
+  }
+
   const alerts = loadAlerts();
   if (alerts.length === 0) {
-    return { message: 'No alerts configured', triggered: [] };
+    return { message: 'No alerts configured', triggered: [], cryptoBrackets: bracketResult };
   }
 
   const triggered = [];
@@ -100,17 +109,21 @@ export async function runAlertMonitor() {
 
     let execution;
     if (alert.action === 'buy' && !portfolio.hasOpenPosition(port, alert.symbol)) {
-      const pos = portfolio.openPosition(port, {
-        symbol: alert.symbol,
-        assetClass: alert.assetClass || 'crypto',
-        side: 'long',
-        quantity,
-        entryPrice: price,
-        stopLoss,
-        takeProfit,
-        reason: `Alert: ${alert.message || alert.symbol} ${alert.condition} ${alert.value}`,
-      });
-      execution = { type: 'entry', symbol: alert.symbol, price, quantity, positionId: pos.id };
+      try {
+        const pos = portfolio.openPosition(port, {
+          symbol: alert.symbol,
+          assetClass: alert.assetClass || 'crypto',
+          side: 'long',
+          quantity,
+          entryPrice: price,
+          stopLoss,
+          takeProfit,
+          reason: `Alert: ${alert.message || alert.symbol} ${alert.condition} ${alert.value}`,
+        });
+        execution = { type: 'entry', symbol: alert.symbol, price, quantity, positionId: pos.id };
+      } catch (err) {
+        console.error(`[AlertMonitor] Failed to open position: ${err.message}`);
+      }
     } else if (alert.action === 'sell') {
       const existingPos = port.positions.find(p => p.symbol === alert.symbol && p.status === 'open');
       if (existingPos) {
@@ -148,7 +161,7 @@ export async function runAlertMonitor() {
   }
 
   saveAlerts(alerts);
-  return { message: 'Monitor complete', triggered, alertsChecked: alerts.length };
+  return { message: 'Monitor complete', triggered, alertsChecked: alerts.length, cryptoBrackets: bracketResult };
 }
 
 /**
