@@ -9,6 +9,7 @@ import { join, dirname } from 'path';
 import getConfig from './config/index.js';
 import routes from './api/routes.js';
 import * as alpaca from './brokers/alpaca.js';
+import { startAutomation, stopAutomation } from './automation/scheduler.js';
 
 const config = getConfig();
 const app = express();
@@ -63,10 +64,12 @@ app.use((err, req, res, _next) => {
 // Auto-connect to Alpaca if API keys are set in environment
 const alpacaKeyId = process.env.ALPACA_API_KEY_ID;
 const alpacaSecret = process.env.ALPACA_SECRET_KEY;
+const alpacaPaper = process.env.ALPACA_PAPER !== 'false'; // default: paper mode
 if (alpacaKeyId && alpacaSecret) {
   try {
-    alpaca.connect(alpacaKeyId, alpacaSecret, true);
-    console.log(`  ║   Alpaca: Connected (paper mode)${' '.repeat(17)}║`);
+    alpaca.connect(alpacaKeyId, alpacaSecret, alpacaPaper);
+    const mode = alpacaPaper ? 'Paper' : 'LIVE';
+    console.log(`  ║   Alpaca: Connected (${mode} mode)${' '.repeat(15 - mode.length)}║`);
   } catch (err) {
     console.log(`  ║   Alpaca: Connection failed - ${err.message.slice(0, 30)}${' '.repeat(10)}║`);
   }
@@ -87,16 +90,22 @@ const server = app.listen(config.port, () => {
     console.log(`  Local:  http://localhost:${config.port}`);
     console.log(`  Health: http://localhost:${config.port}/health\n`);
   }
+
+  // Start background automation (alert monitor + daily review cycle).
+  // Disable with ENABLE_AUTOMATION=false.
+  startAutomation();
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received — shutting down gracefully...');
+  stopAutomation();
   server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
   console.log('SIGINT received — shutting down gracefully...');
+  stopAutomation();
   server.close(() => process.exit(0));
 });
 

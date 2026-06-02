@@ -281,6 +281,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   <span id="live-price" class="neutral">—</span>
   <span id="live-change" class="neutral">—</span>
   <div class="spacer"></div>
+  <div class="status-badge" id="auto-badge" title="Background automation">
+    <div class="dot yellow" id="auto-dot"></div>
+    <span id="auto-label">Auto: —</span>
+  </div>
   <div class="status-badge" id="alpaca-badge">
     <div class="dot red" id="alpaca-dot"></div>
     <span id="alpaca-label">Alpaca: Offline</span>
@@ -501,6 +505,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
             </div>
           </div>
           <div class="sys-section">
+            <div class="sys-section-title">Automation</div>
+            <div id="sys-automation" style="font-size:11px;color:var(--muted);font-family:var(--font);line-height:1.8">Loading…</div>
+          </div>
+          <div class="sys-section">
             <div class="sys-section-title">Alpaca Connection</div>
             <div class="form-grid" style="grid-template-columns:1fr 1fr 120px 100px auto;gap:6px;align-items:end">
               <div class="form-group">
@@ -654,6 +662,7 @@ async function loadChart(symbol=activeSymbol, assetClass=activeClass, days=activ
     candleSeries.setData(unique.map(c => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
 
     if (showSma) applySMA(unique);
+    if (showVol) applyVOL(unique);
     chart.timeScale().fitContent();
 
     // Update OHLC display with last candle
@@ -669,6 +678,21 @@ async function loadChart(symbol=activeSymbol, assetClass=activeClass, days=activ
   } finally {
     $('btn-refresh-chart').textContent = '↻ Refresh';
   }
+}
+
+function applyVOL(candles) {
+  if (!volSeries) {
+    volSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'vol',
+    });
+    volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+  }
+  volSeries.setData(candles.map(c => ({
+    time: c.time,
+    value: c.value || 0,
+    color: c.close >= c.open ? 'rgba(38,166,154,0.45)' : 'rgba(239,83,80,0.45)',
+  })));
 }
 
 function sma(data, period) {
@@ -729,12 +753,9 @@ async function refreshPrices() {
     const data = await api(`/api/prices?symbols=${syms}&classes=${classes}`);
     for (const [sym, info] of Object.entries(data)) {
       if (!watchPrices[sym]) watchPrices[sym] = {};
-      const old = watchPrices[sym].price;
       watchPrices[sym].price = info.price;
-      // simple change estimation — CoinGecko 24h change not available here, use delta vs last seen
-      if (old && info.price) {
-        watchPrices[sym].change24h = ((info.price - old) / old) * 100;
-      }
+      // Real 24h change from the data source (CoinGecko / MEXC / Yahoo)
+      if (info.change24h != null) watchPrices[sym].change24h = info.change24h;
     }
   } catch(e) { /* silent */ }
   renderWatchlist();
@@ -994,11 +1015,17 @@ async function placeOrder() {
       const r = await api('/api/alpaca/order', { method: 'POST', body: JSON.stringify(body) });
       toast(`Order placed: ${r.side?.toUpperCase()} ${r.qty} ${r.symbol} @ ${r.type} — ${r.status}`, 'success');
     } else {
-      // Simulate via paper trading tick
-      toast(`Paper mode: Alpaca not connected. Use alerts to trigger paper trades.`, 'info');
-      $('order-feedback').textContent = 'Connect Alpaca in System tab to place real/paper orders.';
+      // Paper mode: place the trade directly against the paper portfolio.
+      const r = await api('/api/paper/order', { method: 'POST', body: JSON.stringify({ symbol: sym, qty, side: activeSide, assetClass }) });
+      if (r.action === 'sell') {
+        toast(`Paper SELL ${sym} @ ${fmtPrice(r.exitPrice)} · P&L ${fmtPnl(r.pnl)}`, r.pnl >= 0 ? 'success' : 'error');
+      } else {
+        toast(`Paper BUY ${fmt(qty, 6)} ${sym} @ ${fmtPrice(r.entryPrice)}`, 'success');
+      }
+      $('order-feedback').textContent = `Paper trade executed at ${fmtPrice(r.entryPrice || r.exitPrice)}.`;
     }
     refreshPortfolio();
+    refreshTrades();
   } catch(e) { toast('Order error: ' + e.message, 'error'); }
 }
 
@@ -1085,6 +1112,29 @@ async function refreshAlpacaStatus() {
   } catch(e) { /* silent */ }
 }
 
+async function refreshAutomation() {
+  try {
+    const a = await api('/api/automation/status');
+    const on = !!a.enabled;
+    const m = a.monitor || {};
+    const r = a.review || {};
+    $('auto-dot').className = 'dot ' + (on ? 'green' : 'red');
+    $('auto-label').textContent = on ? `Auto: ON · ${m.runs || 0} scans` : 'Auto: OFF';
+
+    const sa = $('sys-automation');
+    if (sa) {
+      sa.innerHTML = on
+        ? `Status: <strong style="color:var(--green)">RUNNING</strong><br>` +
+          `Monitor: every ${Math.round((m.intervalMs || 60000) / 1000)}s · ${m.runs || 0} runs · last ${m.lastRun ? fmtTs(m.lastRun) : '—'}` +
+          `${m.lastResult ? ` · ${m.lastResult.triggered} triggered` : ''}<br>` +
+          `Review: every ${Math.round((r.intervalMs || 86400000) / 3600000)}h · ${r.runs || 0} runs · last cycle ${r.lastResult?.cycle ?? '—'}` +
+          `${m.lastError ? `<br><span style="color:var(--red)">Monitor error: ${m.lastError}</span>` : ''}` +
+          `${r.lastError ? `<br><span style="color:var(--red)">Review error: ${r.lastError}</span>` : ''}`
+        : `Status: <strong style="color:var(--red)">OFF</strong> — set ENABLE_AUTOMATION=true to enable background trading & review loops.`;
+    }
+  } catch(e) { /* silent */ }
+}
+
 async function refreshSysInfo() {
   try {
     const h = await api('/health');
@@ -1111,7 +1161,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (tab.dataset.tab === 'trades')  refreshTrades();
     if (tab.dataset.tab === 'alerts')  refreshAlerts();
     if (tab.dataset.tab === 'perf')    refreshPerformance();
-    if (tab.dataset.tab === 'sys')     { refreshAlpacaStatus(); refreshSysInfo(); }
+    if (tab.dataset.tab === 'sys')     { refreshAlpacaStatus(); refreshSysInfo(); refreshAutomation(); }
   });
 });
 
@@ -1140,6 +1190,14 @@ $('symbol-search').addEventListener('keydown', e => {
 // Refresh chart button
 $('btn-refresh-chart').addEventListener('click', () => loadChart(activeSymbol, activeClass, activeDays));
 
+// VOL toggle
+$('toggle-vol').addEventListener('click', () => {
+  showVol = !showVol;
+  $('toggle-vol').classList.toggle('active', showVol);
+  if (!showVol && volSeries) { chart.removeSeries(volSeries); volSeries = null; }
+  loadChart(activeSymbol, activeClass, activeDays);
+});
+
 // SMA toggle
 $('toggle-sma').addEventListener('click', () => {
   showSma = !showSma;
@@ -1167,8 +1225,11 @@ async function init() {
   setInterval(refreshPrices, 15000);
   setInterval(refreshPortfolio, 20000);
   setInterval(refreshSysInfo, 30000);
+  setInterval(refreshAutomation, 30000);
 
   refreshSysInfo();
+  refreshAutomation();
+  refreshAlpacaStatus();
 }
 
 init();

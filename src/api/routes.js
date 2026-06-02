@@ -4,14 +4,16 @@
 import { Router } from 'express';
 import { handleWebhook, getTradingViewSetupGuide } from '../tradingview/webhook.js';
 import { tick, handleTradingViewAlert } from '../papertrading/engine.js';
-import { fetchPrice, fetchHistoricalData } from '../data/market.js';
+import { fetchPrice, fetchQuote, fetchHistoricalData } from '../data/market.js';
 import { getPortfolio } from '../papertrading/portfolio.js';
 import store from '../data/store.js';
 import * as perf from '../analytics/performance.js';
 import { runReview } from '../self-improve/reviewer.js';
-import { proposeOptimization, applyOptimization, loadStrategy } from '../self-improve/optimizer.js';
+import { proposeOptimization, applyOptimization, loadStrategy, saveStrategy } from '../self-improve/optimizer.js';
 import { runAlertMonitor, addAlert, removeAlert } from '../alerts/monitor.js';
+import * as portfolio from '../papertrading/portfolio.js';
 import * as alpaca from '../brokers/alpaca.js';
+import { getAutomationStatus } from '../automation/scheduler.js';
 import getConfig from '../config/index.js';
 
 const config = getConfig();
@@ -101,7 +103,6 @@ router.post('/api/strategy/update', (req, res) => {
   if (!params) {
     return res.status(400).json({ error: 'Missing params' });
   }
-  const { loadStrategy, saveStrategy } = require('../self-improve/optimizer.js');
   const strategy = loadStrategy() || {};
   Object.assign(strategy, params);
   if (params.weights && strategy.weights) {
@@ -109,6 +110,11 @@ router.post('/api/strategy/update', (req, res) => {
   }
   saveStrategy(strategy);
   res.json({ success: true, strategy });
+});
+
+// Automation status (background scheduler)
+router.get('/api/automation/status', (req, res) => {
+  res.json(getAutomationStatus());
 });
 
 // Get recent cycles
@@ -139,6 +145,52 @@ router.post('/api/tick', async (req, res) => {
   try {
     const result = await tick(config.strategy);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Place a paper trade directly (used by the dashboard Quick Order when Alpaca is offline)
+router.post('/api/paper/order', async (req, res) => {
+  try {
+    const { symbol, qty, side, assetClass = 'crypto' } = req.body;
+    const sym = (symbol || '').toUpperCase();
+    const quantity = parseFloat(qty);
+    if (!sym || !quantity || quantity <= 0) {
+      return res.status(400).json({ error: 'symbol and a positive qty are required' });
+    }
+
+    const price = await fetchPrice(sym, assetClass);
+    if (!price) return res.status(502).json({ error: `Could not fetch price for ${sym}` });
+
+    const port = portfolio.loadPortfolio(config.paperBalance);
+    portfolio.updatePositionPrices(port, { [sym]: price });
+
+    if (side === 'sell') {
+      const open = port.positions.find(p => p.symbol === sym && p.status === 'open');
+      if (!open) return res.status(400).json({ error: `No open ${sym} position to sell` });
+      const closed = portfolio.closePosition(port, open.id, price, 'manual_paper');
+      return res.json({ success: true, action: 'sell', symbol: sym, exitPrice: price, pnl: closed?.pnl, pnlPercent: closed?.pnlPercent });
+    }
+
+    // Default: buy
+    if (portfolio.hasOpenPosition(port, sym)) {
+      return res.status(400).json({ error: `Already holding an open ${sym} position` });
+    }
+    const strategy = loadStrategy() || {};
+    const stopLossPct = strategy.stopLossPct || 0.02;
+    const rr = strategy.riskRewardRatio || 2;
+    const pos = portfolio.openPosition(port, {
+      symbol: sym,
+      assetClass,
+      side: 'long',
+      quantity,
+      entryPrice: price,
+      stopLoss: price * (1 - stopLossPct),
+      takeProfit: price * (1 + stopLossPct * rr),
+      reason: 'Manual paper order',
+    });
+    res.json({ success: true, action: 'buy', symbol: sym, entryPrice: price, quantity, positionId: pos.id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -216,8 +268,8 @@ router.get('/api/prices', async (req, res) => {
   const results = {};
   await Promise.all(symbols.map(async (s, i) => {
     const assetClass = classes[i] || (s.length <= 4 && ['BTC','ETH','SOL','ADA','DOGE'].includes(s.toUpperCase()) ? 'crypto' : 'stock');
-    const price = await fetchPrice(s.trim(), assetClass);
-    results[s.trim().toUpperCase()] = { price, assetClass };
+    const { price, change24h } = await fetchQuote(s.trim(), assetClass);
+    results[s.trim().toUpperCase()] = { price, change24h, assetClass };
   }));
   res.json(results);
 });
