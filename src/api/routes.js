@@ -265,9 +265,12 @@ router.get('/api/webhook/alerts', (req, res) => {
 router.get('/api/prices', async (req, res) => {
   const symbols = (req.query.symbols || 'BTC,ETH,SOL').split(',');
   const classes = (req.query.classes || '').split(',');
+  const CRYPTO_SYMBOLS = ['BTC','ETH','SOL','ADA','DOGE','XRP','LTC','BCH','LINK','AVAX','MATIC','DOT'];
   const results = {};
   await Promise.all(symbols.map(async (s, i) => {
-    const assetClass = classes[i] || (s.length <= 4 && ['BTC','ETH','SOL','ADA','DOGE'].includes(s.toUpperCase()) ? 'crypto' : 'stock');
+    // Strip a trailing /USD, -USD, USDT etc. so "BTC/USD" detects the same as "BTC".
+    const base = s.trim().toUpperCase().replace(/[/-]?(USDT|USD)$/, '');
+    const assetClass = classes[i] || (CRYPTO_SYMBOLS.includes(base) ? 'crypto' : 'stock');
     const { price, change24h } = await fetchQuote(s.trim(), assetClass);
     results[s.trim().toUpperCase()] = { price, change24h, assetClass };
   }));

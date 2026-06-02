@@ -59,7 +59,7 @@ export async function fetchQuote(symbol, assetClass = 'crypto') {
 }
 
 async function fetchCryptoQuote(symbol) {
-  const normalized = symbol.toUpperCase().replace('USDT', '').replace('USD', '');
+  const normalized = symbol.toUpperCase().replace(/[/\-]/g, '').replace('USDT', '').replace('USD', '');
   const id = normalized === 'BTC' ? 'bitcoin' :
              normalized === 'ETH' ? 'ethereum' :
              normalized === 'SOL' ? 'solana' : null;
@@ -105,7 +105,7 @@ async function fetchYahooQuote(symbol, assetClass) {
 }
 
 async function fetchCryptoPrice(symbol) {
-  const normalized = symbol.toUpperCase().replace('USD', '').replace('USDT', '');
+  const normalized = symbol.toUpperCase().replace(/[/\-]/g, '').replace('USDT', '').replace('USD', '');
   // Try CoinGecko (no location restrictions, free, no API key needed)
   const id = normalized === 'BTC' ? 'bitcoin' : 
              normalized === 'ETH' ? 'ethereum' :
@@ -214,7 +214,7 @@ export async function fetchHistoricalData(symbol, assetClass = 'crypto', days = 
 }
 
 async function fetchCryptoOHLCV(symbol, days) {
-  const normalized = symbol.toUpperCase().replace('USD', '').replace('USDT', '');
+  const normalized = symbol.toUpperCase().replace(/[/\-]/g, '').replace('USDT', '').replace('USD', '');
   const interval = days <= 2 ? '1h' : days <= 14 ? '4h' : '1d';
   const limit = Math.min(days, 365);
   // Use MEXC (free, no API key needed, Binance-compatible format, no geo blocks)

@@ -13,6 +13,7 @@ import getConfig from '../config/index.js';
 import store from '../data/store.js';
 
 let alpaca = null;
+let isPaperMode = true;
 
 /**
  * Initialize the Alpaca client with API credentials.
@@ -24,6 +25,7 @@ export function connect(keyId, secretKey, paper = true) {
     paper: paper,  // true = paper trading, false = live
     usePolygon: false, // Don't need Polygon data
   });
+  isPaperMode = paper;
 
   store.write('alpaca/connection', {
     connected: true,
@@ -40,6 +42,7 @@ export function connect(keyId, secretKey, paper = true) {
  */
 export function disconnect() {
   alpaca = null;
+  isPaperMode = true;
   store.write('alpaca/connection', {
     connected: false,
     paper: true,
@@ -78,7 +81,7 @@ export async function getAccount() {
     portfolioValue: parseFloat(account.portfolio_value),
     buyingPower: parseFloat(account.buying_power),
     dayTradeCount: account.day_trade_count,
-    isPaper: account.account_number?.startsWith('PAPER'),
+    isPaper: isPaperMode,
   };
 }
 

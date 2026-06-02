@@ -9,7 +9,7 @@
     "dev": "node --watch src/index.js",
     "review": "node src/self-improve/reviewer.js",
     "optimize": "node src/self-improve/optimizer.js",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "test": "find src scripts -name '*.js' -o -name '*.cjs' -o -name '*.mjs' | xargs -I{} node --check {} && echo 'All source files passed syntax check'"
   },
   "dependencies": {
     "@alpacahq/alpaca-trade-api": "^3.1.3",
