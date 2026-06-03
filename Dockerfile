@@ -11,6 +11,10 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy application source
 COPY . .
 
+# Copy strategy config outside the /app/data volume so it survives volume mounts
+RUN mkdir -p /app/config && \
+    cp /app/data/strategy/config.yaml /app/config/strategy.yaml
+
 # Expose the port Railway assigns
 EXPOSE ${PORT:-8080}
 
