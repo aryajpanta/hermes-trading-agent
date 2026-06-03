@@ -263,8 +263,15 @@ router.get('/api/webhook/alerts', (req, res) => {
 
 // Multi-symbol price fetch for dashboard watchlist
 router.get('/api/prices', async (req, res) => {
-  const symbols = (req.query.symbols || 'BTC,ETH,SOL').split(',');
-  const classes = (req.query.classes || '').split(',');
+  const strategyAssets = (loadStrategy()?.assets || [])
+    .filter(a => a?.symbol)
+    .map(a => ({ symbol: a.symbol, assetClass: a.assetClass || 'crypto' }));
+  const symbols = (req.query.symbols
+    ? req.query.symbols.split(',')
+    : strategyAssets.map(a => a.symbol));
+  const classes = (req.query.classes
+    ? req.query.classes.split(',')
+    : strategyAssets.map(a => a.assetClass));
   const CRYPTO_SYMBOLS = ['BTC','ETH','SOL','ADA','DOGE','XRP','LTC','BCH','LINK','AVAX','MATIC','DOT'];
   const results = {};
   await Promise.all(symbols.map(async (s, i) => {

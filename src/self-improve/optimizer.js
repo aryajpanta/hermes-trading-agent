@@ -234,7 +234,7 @@ export async function validateOptimization(proposal) {
   const assetRuns = [];
 
   for (const asset of assets) {
-    const candles = await fetchHistoricalData(asset.symbol, asset.assetClass, 30);
+    const candles = await fetchHistoricalData(asset.symbol, asset.assetClass, 90);
     if (!candles || candles.length < 50) continue;
 
     const baseResult = runBacktest(candles, strategy);

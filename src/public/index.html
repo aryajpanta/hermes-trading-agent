@@ -403,6 +403,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
               <select class="form-input" id="order-class">
                 <option value="crypto">Crypto</option>
                 <option value="stock">Stock</option>
+                <option value="forex">Forex</option>
               </select>
             </div>
             <div class="form-actions">
@@ -440,6 +441,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
               <select class="form-input" id="al-class" style="font-size:12px">
                 <option value="crypto">Crypto</option>
                 <option value="stock">Stock</option>
+                <option value="forex">Forex</option>
               </select>
             </div>
             <div class="form-group">
@@ -560,14 +562,7 @@ let activeDays = 7;
 let chart, candleSeries, volSeries, sma20Series, sma50Series;
 let showVol = false, showSma = false;
 
-const WATCHLIST = [
-  { symbol: 'BTC',  name: 'Bitcoin',    geckoId: 'bitcoin',   assetClass: 'crypto' },
-  { symbol: 'ETH',  name: 'Ethereum',   geckoId: 'ethereum',  assetClass: 'crypto' },
-  { symbol: 'SOL',  name: 'Solana',     geckoId: 'solana',    assetClass: 'crypto' },
-  { symbol: 'AAPL', name: 'Apple',      assetClass: 'stock'  },
-  { symbol: 'SPY',  name: 'S&P 500',    assetClass: 'stock'  },
-  { symbol: 'NVDA', name: 'NVIDIA',     assetClass: 'stock'  },
-];
+let WATCHLIST = [];
 const watchPrices = {};
 
 // ─────────────────────────────────────────────
@@ -579,6 +574,22 @@ const fmtPrice = n => n == null ? '—' : n >= 1000 ? fmt(n,2) : n >= 1 ? fmt(n,
 const fmtPnl  = n => (n >= 0 ? '+' : '') + fmt(n,2);
 const pnlCls  = n => n > 0 ? 'up' : n < 0 ? 'dn' : 'neutral';
 const fmtTs   = ts => ts ? new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+const labelSymbol = (symbol, assetClass) => assetClass === 'crypto' ? `${symbol}/USD` : symbol;
+
+function inferAssetClass(symbol) {
+  const cryptoSymbols = ['BTC','ETH','SOL','ADA','DOGE','XRP','LTC','BCH','LINK','AVAX','MATIC','DOT'];
+  return cryptoSymbols.includes(symbol) ? 'crypto' : 'stock';
+}
+
+function normalizeAsset(asset) {
+  const symbol = String(asset?.symbol || '').trim().toUpperCase();
+  if (!symbol) return null;
+  return {
+    symbol,
+    assetClass: String(asset.assetClass || inferAssetClass(symbol)).toLowerCase(),
+    weight: asset.weight,
+  };
+}
 
 function toast(msg, type='info') {
   const el = document.createElement('div');
@@ -596,6 +607,29 @@ async function api(path, opts={}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
+}
+
+async function loadWatchlist() {
+  try {
+    const strategy = await api('/api/strategy');
+    const seen = new Set();
+    WATCHLIST = (strategy.assets || [])
+      .map(normalizeAsset)
+      .filter(asset => {
+        if (!asset || seen.has(asset.symbol)) return false;
+        seen.add(asset.symbol);
+        return true;
+      });
+
+    if (WATCHLIST.length > 0) {
+      selectSymbol(WATCHLIST[0].symbol, WATCHLIST[0].assetClass, { skipChart: true });
+      $('al-sym').placeholder = WATCHLIST[0].symbol;
+      $('al-class').value = WATCHLIST[0].assetClass;
+    }
+  } catch(e) {
+    WATCHLIST = [];
+    toast('Could not load strategy assets', 'error');
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -638,7 +672,7 @@ function initChart() {
 }
 
 async function loadChart(symbol=activeSymbol, assetClass=activeClass, days=activeDays) {
-  $('chart-sym-label').textContent = symbol + '/USD';
+  $('chart-sym-label').textContent = labelSymbol(symbol, assetClass);
   $('btn-refresh-chart').textContent = '↻ Loading…';
   try {
     const candles = await api(`/api/history?symbol=${symbol}&class=${assetClass}&days=${days}`);
@@ -726,6 +760,10 @@ function applySMA(candles) {
 // ─────────────────────────────────────────────
 function renderWatchlist() {
   const list = $('watch-list');
+  if (WATCHLIST.length === 0) {
+    list.innerHTML = '<div class="empty-state">No strategy assets configured</div>';
+    return;
+  }
   list.innerHTML = WATCHLIST.map(item => {
     const p = watchPrices[item.symbol];
     const priceStr = p ? fmtPrice(p.price) : '—';
@@ -747,6 +785,10 @@ function renderWatchlist() {
 }
 
 async function refreshPrices() {
+  if (WATCHLIST.length === 0) {
+    renderWatchlist();
+    return;
+  }
   const syms = WATCHLIST.map(w => w.symbol).join(',');
   const classes = WATCHLIST.map(w => w.assetClass).join(',');
   try {
@@ -765,7 +807,7 @@ async function refreshPrices() {
 function updateLiveTicker() {
   const p = watchPrices[activeSymbol];
   if (!p) return;
-  $('live-sym').textContent = activeSymbol + '/USD';
+  $('live-sym').textContent = labelSymbol(activeSymbol, activeClass);
   $('live-price').textContent = fmtPrice(p.price);
   $('live-price').className = '';
   const chg = p.change24h;
@@ -777,14 +819,18 @@ function updateLiveTicker() {
   }
 }
 
-function selectSymbol(symbol, assetClass) {
+function selectSymbol(symbol, assetClass, options={}) {
   activeSymbol = symbol;
   activeClass = assetClass;
   $('order-symbol').value = symbol;
   $('order-class').value = assetClass;
+  $('al-sym').placeholder = symbol;
+  $('al-class').value = assetClass;
+  $('live-sym').textContent = labelSymbol(symbol, assetClass);
+  $('chart-sym-label').textContent = labelSymbol(symbol, assetClass);
   renderWatchlist();
   updateLiveTicker();
-  loadChart(symbol, assetClass, activeDays);
+  if (!options.skipChart) loadChart(symbol, assetClass, activeDays);
 }
 
 // ─────────────────────────────────────────────
@@ -1181,7 +1227,7 @@ $('symbol-search').addEventListener('keydown', e => {
     const val = $('symbol-search').value.trim().toUpperCase();
     if (val) {
       const found = WATCHLIST.find(w => w.symbol === val);
-      selectSymbol(val, found?.assetClass || 'crypto');
+      selectSymbol(val, found?.assetClass || inferAssetClass(val));
       $('symbol-search').value = '';
     }
   }
@@ -1213,12 +1259,13 @@ $('toggle-sma').addEventListener('click', () => {
 //  BOOTSTRAP
 // ─────────────────────────────────────────────
 async function init() {
+  await loadWatchlist();
   initChart();
   renderWatchlist();
   await refreshPrices();
   await Promise.all([
     refreshPortfolio(),
-    loadChart(activeSymbol, activeClass, activeDays),
+    WATCHLIST.length > 0 ? loadChart(activeSymbol, activeClass, activeDays) : Promise.resolve(),
   ]);
 
   // Polling

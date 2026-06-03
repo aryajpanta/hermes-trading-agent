@@ -1,68 +1,49 @@
-# ============================================================
-# Hermes Trading Agent — Strategy Configuration
-# ============================================================
-# AGGRESSIVE MODE — Higher risk, more trades, faster positioning
-# ============================================================
-
-name: "Hermes Aggressive Multi-Asset Strategy"
-
-# === Asset Universe ===
+name: Hermes Aggressive Multi-Asset Strategy
 assets:
-  - symbol: "BTC"
-    assetClass: "crypto"
+  - symbol: BTC
+    assetClass: crypto
     weight: 0.2
-  - symbol: "ETH"
-    assetClass: "crypto"
+  - symbol: ETH
+    assetClass: crypto
     weight: 0.2
-  - symbol: "SOL"
-    assetClass: "crypto"
+  - symbol: SOL
+    assetClass: crypto
     weight: 0.15
-  - symbol: "AAPL"
-    assetClass: "stock"
+  - symbol: AAPL
+    assetClass: stock
     weight: 0.1
-  - symbol: "SPY"
-    assetClass: "stock"
+  - symbol: SPY
+    assetClass: stock
     weight: 0.1
-  - symbol: "EURUSD"
-    assetClass: "forex"
+  - symbol: EURUSD
+    assetClass: forex
     weight: 0.05
-  - symbol: "NVDA"
-    assetClass: "stock"
+  - symbol: NVDA
+    assetClass: stock
     weight: 0.1
-  - symbol: "DOGE"
-    assetClass: "crypto"
+  - symbol: DOGE
+    assetClass: crypto
     weight: 0.1
-
-# === Goals ===
 goals:
-  minSharpe: 1               # Lower threshold to keep aggression
-  maxDrawdown: 25            # Can tolerate more downside
-  targetReturn30d: 25        # Higher return target
-  minWinRate: 40             # Accept lower win rate for bigger wins
+  minSharpe: 1
+  maxDrawdown: 25
+  targetReturn30d: 25
+  minWinRate: 40
   maxConsecutiveLosses: 6
-
-# === Indicator Parameters (Tighter = More Signals) ===
-rsiPeriod: 11               # Faster RSI = more responsive
-rsiOversold: 30             # Oversold range
-rsiOverbought: 60           # Tighter overbought = more sell signals
-
-macdFast: 8                 # Faster MACD
-macdSlow: 21                # Shorter slow MA
-macdSignal: 7               # Quicker signal line
-
-bbPeriod: 16                # Shorter BB period
-bbStdDev: 1.8               # Tighter bands = more breakouts
-
-signalThreshold: 10         # Lower = way more trades
-
-# === Risk Management (Aggressive) ===
-riskPerTrade: 0.025         # 2.5% risk per trade
-stopLossPct: 0.02           # 2% stop loss
-riskRewardRatio: 3          # Target higher reward
-volumeThreshold: 1.2        # Lower volume confirmation bar
-maxOpenPositions: 10        # More simultaneous positions
-
-# === Signal Weights (Heavier on momentum) ===
+rsiPeriod: 11
+rsiOversold: 30
+rsiOverbought: 60
+macdFast: 6
+macdSlow: 21
+macdSignal: 7
+bbPeriod: 16
+bbStdDev: 1.8
+signalThreshold: 10
+riskPerTrade: 0.025
+stopLossPct: 0.02
+riskRewardRatio: 3
+volumeThreshold: 1.2
+maxOpenPositions: 10
 weights:
   smaCrossover: 20
   macdCrossover: 25
@@ -74,11 +55,9 @@ weights:
   bbOverbought: 15
   priceAboveSMA: 8
   volumeConfirmation: 8
-
-# === Self-Improvement ===
 selfImprove:
-  reviewCadence: "daily"
+  reviewCadence: daily
   optimizeOneAtATime: true
   paperTrade: false
   liveTrading: true
-  firstCycleReadOnly: false  # AUTO-OPTIMIZE — start learning immediately
+  firstCycleReadOnly: false
