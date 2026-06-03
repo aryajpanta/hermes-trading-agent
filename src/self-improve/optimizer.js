@@ -12,7 +12,7 @@ import { fetchHistoricalData } from '../data/market.js';
 import { runBacktest } from '../strategy/backtest.js';
 
 const config = getConfig();
-const STRATEGY_PATH = config.strategy?.strategyConfigPath ||
+const STRATEGY_PATH = process.env.STRATEGY_CONFIG_PATH ||
   path.join(config.dataDir, 'strategy/config.yaml');
 
 /**
