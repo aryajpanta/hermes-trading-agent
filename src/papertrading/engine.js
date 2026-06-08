@@ -4,6 +4,7 @@
  */
 import { evaluate } from '../strategy/engine.js';
 import { fetchPrice, fetchHistoricalData } from '../data/market.js';
+import { fetchSentiment } from '../data/sentiment.js';
 import { calcStopLoss, calcTakeProfit } from '../strategy/risk.js';
 import store from '../data/store.js';
 import * as portfolio from './portfolio.js';
@@ -59,7 +60,8 @@ export async function tick(strategyConfig) {
   const signals = [];
   for (const asset of assets) {
     const candles = await fetchHistoricalData(asset.symbol, asset.assetClass, 60);
-    const signal = evaluate(candles, params);
+    const sentiment = await fetchSentiment(asset.symbol);
+    const signal = evaluate(candles, params, sentiment);
     signals.push({ symbol: asset.symbol, assetClass: asset.assetClass, ...signal });
   }
 

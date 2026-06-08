@@ -55,6 +55,7 @@ weights:
   bbOverbought: 15
   priceAboveSMA: 8
   volumeConfirmation: 8
+  aiSentiment: 15
 selfImprove:
   reviewCadence: daily
   optimizeOneAtATime: true

@@ -12,7 +12,7 @@ import { calcPositionSize, calcStopLoss, calcTakeProfit } from './risk.js';
  * @param {Object} params - Strategy parameters (loaded from config)
  * @returns {Object} { signal: 'buy'|'sell'|'hold', confidence, entryPrice, stopLoss, takeProfit, reason }
  */
-export function evaluate(candles, params) {
+export function evaluate(candles, params, sentimentData = null) {
   if (!candles || candles.length < 50) {
     return { signal: 'hold', confidence: 0, reason: 'Insufficient data' };
   }
@@ -124,6 +124,17 @@ export function evaluate(candles, params) {
     }
   }
 
+  // AI Sentiment Confirmation
+  if (sentimentData && sentimentData.sentimentScore !== undefined) {
+    const sentimentWeight = params.weights?.aiSentiment || 15;
+    const sentimentImpact = sentimentData.sentimentScore * sentimentWeight;
+    score += sentimentImpact;
+    if (Math.abs(sentimentImpact) >= 1) {
+      const type = sentimentData.sentimentScore > 0 ? 'bullish' : 'bearish';
+      reasons.push(`AI Sentiment is ${type} (Score: ${sentimentData.sentimentScore.toFixed(2)}, impact: ${sentimentImpact.toFixed(1)})`);
+    }
+  }
+
   // --- Decision ---
   const threshold = params.signalThreshold || 30;
   let signal = 'hold';
@@ -158,6 +169,7 @@ export function evaluate(candles, params) {
       bbLower: lowerBand,
       sma20: lastSMA20,
       sma50: lastSMA50,
+      sentiment: sentimentData ? sentimentData.sentimentScore : null,
     },
     scoreBreakdown: { total: score, components: reasons.length },
   };

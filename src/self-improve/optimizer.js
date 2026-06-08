@@ -58,6 +58,7 @@ const OPTIMIZABLE_PARAMS = {
   'weights.macdCrossover': { min: 10, max: 40, step: 5, description: 'MACD crossover signal weight' },
   'weights.rsiOversold': { min: 5, max: 30, step: 5, description: 'RSI oversold signal weight' },
   'weights.rsiOverbought': { min: 5, max: 30, step: 5, description: 'RSI overbought signal weight' },
+  'weights.aiSentiment': { min: 5, max: 30, step: 5, description: 'AI news sentiment signal weight' },
 };
 
 /**

@@ -45,7 +45,9 @@
     "action": "buy",
     "message": "ETH dip buy",
     "repeatable": true,
-    "triggered": false
+    "triggered": true,
+    "lastTriggered": "2026-06-08T18:42:56.961Z",
+    "triggerPrice": 1681.25
   },
   {
     "id": "sol_breakout",
@@ -93,7 +95,7 @@
     "action": "buy",
     "message": "SPY bullish continuation",
     "repeatable": true,
-    "triggered": true,
+    "triggered": false,
     "lastTriggered": "2026-06-01T12:19:05.121Z",
     "triggerPrice": 756.48
   }
