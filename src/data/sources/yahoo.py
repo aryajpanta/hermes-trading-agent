@@ -120,7 +120,7 @@ class YahooFinanceSource(BaseDataSource):
             logger.info(f"Fetched {len(records)} records for {symbol} from Yahoo Finance")
             return records
 
-        return self._retry_with_backoff(_fetch)
+        return self._retry_with_backoff(_fetch)  # type: ignore[no-any-return]
 
     def is_available(self) -> bool:
         """Check if Yahoo Finance is available."""
@@ -143,7 +143,7 @@ class YahooFinanceSource(BaseDataSource):
         yahoo_symbol = self._normalize_symbol(symbol)
         try:
             ticker = yf.Ticker(yahoo_symbol)
-            return ticker.fast_info
+            return ticker.fast_info  # type: ignore[no-any-return]
         except Exception as e:
             logger.error(f"Failed to get info for {symbol}: {e}")
             return None

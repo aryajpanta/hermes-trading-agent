@@ -20,6 +20,8 @@ ta-lib>=0.4.28
 transformers>=4.35.0
 torch>=2.1.0
 vaderSentiment>=3.3.2
+feedparser>=6.0.0
+praw>=7.7.0
 
 # Backtesting
 vectorbt>=0.26.0

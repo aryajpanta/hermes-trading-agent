@@ -92,7 +92,7 @@ class AlphaVantageSource(BaseDataSource):
             else:
                 return self._fetch_stock(symbol, outputsize)
 
-        return self._retry_with_backoff(_fetch)
+        return self._retry_with_backoff(_fetch)  # type: ignore[no-any-return]
 
     def _fetch_stock(
         self, symbol: str, outputsize: str = "full"
@@ -289,4 +289,4 @@ class AlphaVantageSource(BaseDataSource):
 
             return records
 
-        return self._retry_with_backoff(_fetch)
+        return self._retry_with_backoff(_fetch)  # type: ignore[no-any-return]

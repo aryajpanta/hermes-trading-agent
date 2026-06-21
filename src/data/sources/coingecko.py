@@ -148,7 +148,7 @@ class CoinGeckoSource(BaseDataSource):
             )
             return records
 
-        return self._retry_with_backoff(_fetch)
+        return self._retry_with_backoff(_fetch)  # type: ignore[no-any-return]
 
     def fetch_ohlc(
         self,
@@ -174,7 +174,7 @@ class CoinGeckoSource(BaseDataSource):
             url = f"{COINGECKO_BASE_URL}/coins/{coin_id}/ohlc"
             params = {"vs_currency": "usd", "days": days}
 
-            response = self._session.get(url, params=params, timeout=self.timeout)
+            response = self._session.get(url, params=params, timeout=self.timeout)  # type: ignore[arg-type]
             response.raise_for_status()
             data = response.json()
 
@@ -205,7 +205,7 @@ class CoinGeckoSource(BaseDataSource):
             )
             return records
 
-        return self._retry_with_backoff(_fetch)
+        return self._retry_with_backoff(_fetch)  # type: ignore[no-any-return]
 
     def is_available(self) -> bool:
         """Check if CoinGecko API is available."""
