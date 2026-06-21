@@ -5,7 +5,7 @@
 **Created:** 2026-06-21
 **Iteration:** 0/15
 **Current Milestone:** M1
-**Last Good Commit:** (initial)
+**Last Good Commit:** 98a8380
 
 ## Configuration
 - max_iterations: 15
@@ -35,11 +35,14 @@
 
 ## Dependency Graph
 ```
-M1 (no deps) ─┬─→ M3 (deps: M1) ─┬─→ M5 (deps: M1,M2,M4) ─→ M7 (deps: M5,M6) ─┬─→ M8 (deps: M7)
-               │                   │                                                │
-               └─→ M2 (deps: M1) ─┤                                                └─→ M9 (deps: M7,M8)
-                                   │
-                                   └─→ M4 (deps: M1,M3) ──→ M6 (deps: M3,M4)
+M1 (no deps) ──→ M2 (deps: M1) ──→ M5 (deps: M1,M2,M4)
+    │                │                    ↑
+    └──→ M3 (deps: M1) ──→ M4 (deps: M1,M3) ──→ M6 (deps: M3,M4)
+                                                    │
+                                                    ↓
+                                                  M7 (deps: M5,M6) ──→ M8 (deps: M7)
+                                                        │
+                                                        └──→ M9 (deps: M7,M8)
 ```
 **Parallel opportunities:**
 - M1 → then M2 ∥ M3 can run in parallel
