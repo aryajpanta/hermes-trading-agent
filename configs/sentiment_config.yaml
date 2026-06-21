@@ -1,0 +1,46 @@
+# Sentiment Analysis Configuration
+
+sentiment_model:
+  primary: "finbert"  # ProsusAI/finbert
+  fallback: "vader"
+  device: "cpu"  # or "cuda" if GPU available
+  batch_size: 32
+
+sources:
+  rss:
+    enabled: true
+    feeds:
+      - name: "Reuters Business"
+        url: "https://news.google.com/rss/search?q=when:24h+business+OR+stocks+OR+markets&hl=en-US&gl=US&ceid=US:en"
+      - name: "MarketWatch"
+        url: "https://feeds.marketwatch.com/marketwatch/topstories/"
+      - name: "CoinDesk"
+        url: "https://www.coindesk.com/arc/outboundfeeds/rss/"
+        
+  reddit:
+    enabled: true
+    subreddits:
+      - wallstreetbets
+      - stocks
+      - cryptocurrency
+      - investing
+    client_id: ""
+    client_secret: ""
+    user_agent: "TradingIntelligence/1.0"
+    
+  twitter:
+    enabled: false  # requires API access
+    bearer_token: ""
+    search_queries:
+      - "$AAPL"
+      - "$TSLA"
+      - "$BTC"
+
+scoring:
+  engagement_weight: 0.3  # weight of engagement in final score
+  recency_weight: 0.4  # weight of how recent the signal is
+  source_weight: 0.3  # weight of source credibility
+
+deduplication:
+  similarity_threshold: 0.85  # cosine similarity for dedup
+  time_window_hours: 24

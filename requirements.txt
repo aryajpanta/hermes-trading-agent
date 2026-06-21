@@ -1,0 +1,46 @@
+# Trading Intelligence System - Requirements
+
+# Data Collection
+yfinance>=0.2.31
+ccxt>=4.0.0
+alpha-vantage>=2.3.1
+requests>=2.31.0
+
+# Database
+aiosqlite>=0.19.0
+sqlalchemy>=2.0.0
+
+# Analysis
+pandas>=2.1.0
+numpy>=1.25.0
+ta>=0.11.0
+ta-lib>=0.4.28
+
+# Sentiment
+transformers>=4.35.0
+torch>=2.1.0
+vaderSentiment>=3.3.2
+
+# Backtesting
+vectorbt>=0.26.0
+
+# Dashboard
+fastapi>=0.104.0
+uvicorn>=0.24.0
+jinja2>=3.1.2
+python-multipart>=0.0.6
+
+# Broker
+alpaca-py>=0.21.0
+
+# Utilities
+pydantic>=2.5.0
+pyyaml>=6.0.1
+python-dotenv>=1.0.0
+click>=8.1.7
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+mypy>=1.7.0
+flake8>=6.1.0

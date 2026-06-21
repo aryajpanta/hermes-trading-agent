@@ -1,0 +1,33 @@
+# Broker Configuration
+
+broker:
+  name: "alpaca"
+  base_url: "https://paper-api.alpaca.markets"  # paper trading
+  data_url: "https://data.alpaca.markets"
+  api_key: ""  # get from alpaca.markets
+  secret_key: ""
+
+execution:
+  mode: "PAPER"  # PAPER | LIVE (requires approval)
+  require_approval: true
+  max_daily_trades: 10
+  max_daily_loss_pct: 0.02  # auto-pause at -2%
+  emergency_stop: false
+
+order_types:
+  default: "limit"  # market | limit | stop | stop_limit
+  limit_buffer_pct: 0.001  # 0.1% above/below current price
+  timeout_seconds: 300  # cancel unfilled orders after 5 min
+
+position_sizing:
+  method: "kelly"  # kelly | fixed_fractional | equal_weight
+  kelly_fraction: 0.25  # quarter Kelly for safety
+  fixed_risk_pct: 0.01  # 1% risk per trade
+  max_position_pct: 0.05  # 5% max per position
+
+risk_management:
+  max_portfolio_risk: 0.02  # 2% daily loss limit
+  max_correlated_positions: 3
+  stop_loss_atr_multiple: 2.0
+  take_profit_rr_ratio: 2.0  # 2:1 reward:risk
+  max_holding_period_days: 30

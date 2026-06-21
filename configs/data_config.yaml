@@ -1,0 +1,63 @@
+# Data Collection Configuration
+
+data_sources:
+  yahoo:
+    enabled: true
+    rate_limit: 2000  # requests per hour
+    timeout: 30
+    
+  coingecko:
+    enabled: true
+    api_key: ""  # free tier, no key needed
+    rate_limit: 10  # requests per minute
+    timeout: 30
+    
+  alpha_vantage:
+    enabled: true
+    api_key: ""  # get from alphavantage.co
+    rate_limit: 25  # requests per day (free tier)
+    timeout: 30
+
+symbols:
+  stocks:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - NVDA
+    - META
+    - TSLA
+    - BRK.B
+    - JPM
+    - V
+    - JNJ
+    - WMT
+    - PG
+    - MA
+    - HD
+    - UNH
+    - XOM
+    - CVX
+    - ABBV
+    - MRK
+    
+  crypto:
+    - BTC
+    - ETH
+    - SOL
+    - BNB
+    - XRP
+    
+  forex:
+    - EUR-USD
+    - GBP-USD
+    - USD-JPY
+    
+  commodities:
+    - GC=F  # Gold
+    - SI=F  # Silver
+    - CL=F  # Crude Oil
+
+storage:
+  db_path: "data/market.db"
+  backup_interval: "7d"
