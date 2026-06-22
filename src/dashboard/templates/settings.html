@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Settings — Trading Intelligence{% endblock %}
+
+{% block content %}
+<div class="page" x-data="settingsPage()" x-init="init()">
+    <h1 class="page-title">Settings</h1>
+
+    <section class="section">
+        <h2 class="section-title">Dashboard Configuration</h2>
+
+        <div class="settings-form">
+            <!-- Auto Refresh -->
+            <div class="form-group">
+                <label class="form-label">Auto-Refresh Interval (seconds)</label>
+                <input class="form-input" type="number" x-model.number="settings.auto_refresh_seconds" min="10" max="600" step="10">
+            </div>
+
+            <!-- Dark Mode -->
+            <div class="form-group">
+                <label class="form-label">Dark Mode</label>
+                <label class="toggle">
+                    <input type="checkbox" x-model="settings.dark_mode">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Watchlist -->
+            <div class="form-group">
+                <label class="form-label">Watchlist (comma-separated)</label>
+                <input class="form-input" type="text" x-model="watchlistStr" placeholder="SPY, QQQ, BTC, ETH">
+            </div>
+
+            <!-- Alert Thresholds -->
+            <div class="form-group">
+                <label class="form-label">Sentiment Extreme Threshold</label>
+                <input class="form-input" type="number" x-model.number="settings.alert_thresholds.sentiment_extreme" min="0" max="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Drawdown Warning (%)</label>
+                <input class="form-input" type="number" x-model.number="drawdownPct" min="1" max="50" step="1">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" @click="saveSettings()">Save Settings</button>
+                <button class="btn btn-secondary" @click="loadSettings()">Reset</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Keys -->
+    <section class="section">
+        <h2 class="section-title">API Keys</h2>
+        <div class="settings-form">
+            <div class="form-group">
+                <label class="form-label">Alpha Vantage API Key</label>
+                <input class="form-input" type="password" x-model="apiKeys.alpha_vantage" placeholder="Enter key...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Reddit Client ID</label>
+                <input class="form-input" type="password" x-model="apiKeys.reddit_client_id" placeholder="Enter client ID...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Reddit Client Secret</label>
+                <input class="form-input" type="password" x-model="apiKeys.reddit_client_secret" placeholder="Enter client secret...">
+            </div>
+        </div>
+    </section>
+
+    <!-- Status -->
+    <section class="section">
+        <div class="alert" :class="saveSuccess ? 'alert-success' : 'alert-info'" x-show="saveMessage" x-text="saveMessage"></div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function settingsPage() {
+    return {
+        settings: { auto_refresh_seconds: 60, dark_mode: true, alert_thresholds: { sentiment_extreme: 0.5, drawdown_warning: 0.10 } },
+        apiKeys: { alpha_vantage: '', reddit_client_id: '', reddit_client_secret: '' },
+        watchlistStr: 'SPY, QQQ, BTC, ETH, GC=F, EUR-USD',
+        drawdownPct: 10,
+        saveMessage: '',
+        saveSuccess: false,
+
+        async init() {
+            await this.loadSettings();
+        },
+
+        async loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    this.settings = await res.json();
+                    this.watchlistStr = (this.settings.watchlist || []).join(', ');
+                    this.drawdownPct = (this.settings.alert_thresholds?.drawdown_warning || 0.10) * 100;
+                }
+            } catch (e) { console.error('Load settings failed:', e); }
+        },
+
+        async saveSettings() {
+            try {
+                const updates = {
+                    ...this.settings,
+                    watchlist: this.watchlistStr.split(',').map(s => s.trim()).filter(Boolean),
+                    alert_thresholds: {
+                        sentiment_extreme: this.settings.alert_thresholds?.sentiment_extreme || 0.5,
+                        drawdown_warning: this.drawdownPct / 100,
+                    }
+                };
+                const res = await fetch('/api/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                if (res.ok) {
+                    this.settings = await res.json();
+                    this.saveMessage = 'Settings saved successfully!';
+                    this.saveSuccess = true;
+                    setTimeout(() => this.saveMessage = '', 3000);
+                } else {
+                    this.saveMessage = 'Failed to save settings.';
+                    this.saveSuccess = false;
+                }
+            } catch (e) {
+                this.saveMessage = 'Error saving settings: ' + e.message;
+                this.saveSuccess = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

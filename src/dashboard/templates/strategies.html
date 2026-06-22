@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Strategies — Trading Intelligence{% endblock %}
+
+{% block content %}
+<div class="page" x-data="strategiesPage()" x-init="init()">
+    <h1 class="page-title">Strategies</h1>
+
+    <!-- Strategy List -->
+    <section class="section">
+        <h2 class="section-title">Strategy Library</h2>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Assets</th>
+                        <th>Timeframes</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="s in strategies" :key="s.id">
+                        <tr>
+                            <td><code x-text="s.id"></code></td>
+                            <td x-text="s.name"></td>
+                            <td><span class="badge badge-blue" x-text="s.category"></span></td>
+                            <td x-text="(s.assets || []).join(', ')"></td>
+                            <td x-text="(s.timeframes || []).join(', ')"></td>
+                            <td class="text-muted text-sm" x-text="s.description"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p x-show="strategies.length === 0" class="text-muted">No strategies found.</p>
+        </div>
+    </section>
+
+    <!-- Active Signals from Strategies -->
+    <section class="section">
+        <h2 class="section-title">Current Signals</h2>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Symbol</th>
+                        <th>Direction</th>
+                        <th>Confidence</th>
+                        <th>Reasoning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="sig in signals" :key="sig.strategy_id + sig.symbol">
+                        <tr>
+                            <td x-text="sig.strategy_id"></td>
+                            <td x-text="sig.symbol"></td>
+                            <td>
+                                <span class="badge" :class="sig.direction > 0 ? 'badge-green' : sig.direction < 0 ? 'badge-red' : 'badge-gray'"
+                                      x-text="sig.direction > 0 ? 'BUY' : sig.direction < 0 ? 'SELL' : 'NEUTRAL'"></span>
+                            </td>
+                            <td x-text="(sig.confidence * 100).toFixed(1) + '%'"></td>
+                            <td class="text-muted text-sm" x-text="sig.reasoning"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p x-show="signals.length === 0" class="text-muted">No signals generated.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function strategiesPage() {
+    return {
+        strategies: [],
+        signals: [],
+
+        async init() {
+            await this.refresh();
+            setInterval(() => this.refresh(), 60000);
+        },
+
+        async refresh() {
+            try {
+                const [stratRes, sigRes] = await Promise.all([
+                    fetch('/api/strategies'),
+                    fetch('/api/signals'),
+                ]);
+                if (stratRes.ok) this.strategies = await stratRes.json();
+                if (sigRes.ok) this.signals = await sigRes.json();
+            } catch (e) { console.error('Refresh failed:', e); }
+        }
+    };
+}
+</script>
+{% endblock %}

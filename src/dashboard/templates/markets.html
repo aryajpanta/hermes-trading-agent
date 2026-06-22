@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Markets — Trading Intelligence{% endblock %}
+
+{% block content %}
+<div class="page" x-data="marketsPage()" x-init="init()">
+    <h1 class="page-title">Markets</h1>
+
+    <!-- Symbol Selector -->
+    <section class="section">
+        <div class="toolbar">
+            <select class="select" x-model="selectedSymbol" @change="loadData()">
+                <template x-for="s in symbols" :key="s">
+                    <option :value="s" x-text="s"></option>
+                </template>
+            </select>
+            <select class="select" x-model="days" @change="loadData()">
+                <option value="30">30 Days</option>
+                <option value="90" selected>90 Days</option>
+                <option value="180">180 Days</option>
+                <option value="365">1 Year</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Price Chart -->
+    <section class="section">
+        <h2 class="section-title">Price Chart — <span x-text="selectedSymbol"></span></h2>
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </section>
+
+    <!-- Latest Quote -->
+    <section class="section" x-show="market.latest">
+        <h2 class="section-title">Latest Quote</h2>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-header">Open</div>
+                <div class="card-body"><span class="card-value" x-text="formatPrice(market.latest?.open)"></span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">High</div>
+                <div class="card-body"><span class="card-value text-green" x-text="formatPrice(market.latest?.high)"></span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">Low</div>
+                <div class="card-body"><span class="card-value text-red" x-text="formatPrice(market.latest?.low)"></span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">Close</div>
+                <div class="card-body"><span class="card-value" x-text="formatPrice(market.latest?.close)"></span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">Volume</div>
+                <div class="card-body"><span class="card-value" x-text="formatVolume(market.latest?.volume)"></span></div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function marketsPage() {
+    return {
+        symbols: ['SPY', 'QQQ', 'BTC', 'ETH', 'GC=F', 'EUR-USD', 'AAPL', 'MSFT', 'NVDA', 'TSLA'],
+        selectedSymbol: 'SPY',
+        days: '90',
+        market: {},
+        chart: null,
+
+        async init() {
+            await this.loadData();
+            setInterval(() => this.loadData(), 60000);
+        },
+
+        async loadData() {
+            try {
+                const res = await fetch(`/api/markets/${this.selectedSymbol}?days=${this.days}`);
+                if (res.ok) {
+                    this.market = await res.json();
+                    this.renderChart();
+                }
+            } catch (e) { console.error('Load failed:', e); }
+        },
+
+        renderChart() {
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) return;
+            if (this.chart) this.chart.destroy();
+
+            const history = this.market.history || [];
+            if (history.length === 0) return;
+
+            const labels = history.map(h => h.timestamp?.split('T')[0] || h.timestamp);
+            const closes = history.map(h => h.close);
+
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: this.selectedSymbol + ' Close',
+                        data: closes,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', maxTicksLimit: 10 },
+                            grid: { color: 'rgba(148,163,184,0.1)' },
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(148,163,184,0.1)' },
+                        }
+                    }
+                }
+            });
+        },
+
+        formatPrice(v) { return v != null ? '$' + Number(v).toFixed(2) : '—'; },
+        formatVolume(v) { return v != null ? Number(v).toLocaleString() : '—'; }
+    };
+}
+</script>
+{% endblock %}

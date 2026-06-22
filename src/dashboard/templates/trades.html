@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Trades — Trading Intelligence{% endblock %}
+
+{% block content %}
+<div class="page" x-data="tradesPage()" x-init="init()">
+    <h1 class="page-title">Paper Trades</h1>
+
+    <!-- Summary Cards -->
+    <section class="section">
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" x-text="trades.length"></div>
+                <div class="stat-label">Total Trades</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-green" x-text="winCount"></div>
+                <div class="stat-label">Winning</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-red" x-text="lossCount"></div>
+                <div class="stat-label">Losing</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" :class="totalPnl >= 0 ? 'text-green' : 'text-red'" x-text="'$' + totalPnl.toFixed(2)"></div>
+                <div class="stat-label">Total P&L</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Equity Curve -->
+    <section class="section" x-show="trades.length > 0">
+        <h2 class="section-title">Equity Curve</h2>
+        <div class="chart-container">
+            <canvas id="equityChart"></canvas>
+        </div>
+    </section>
+
+    <!-- Trade Log -->
+    <section class="section">
+        <h2 class="section-title">Trade History</h2>
+        <div class="table-wrap">
+            <table class="table" x-show="trades.length > 0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Symbol</th>
+                        <th>Direction</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>Shares</th>
+                        <th>P&L</th>
+                        <th>P&L %</th>
+                        <th>Holding Days</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(t, idx) in trades" :key="idx">
+                        <tr>
+                            <td x-text="idx + 1"></td>
+                            <td x-text="t.symbol"></td>
+                            <td>
+                                <span class="badge" :class="t.direction > 0 ? 'badge-green' : 'badge-red'"
+                                      x-text="t.direction > 0 ? 'LONG' : 'SHORT'"></span>
+                            </td>
+                            <td x-text="'$' + (t.entry_price || 0).toFixed(2)"></td>
+                            <td x-text="'$' + (t.exit_price || 0).toFixed(2)"></td>
+                            <td x-text="(t.shares || 0).toFixed(0)"></td>
+                            <td :class="(t.pnl || 0) >= 0 ? 'text-green' : 'text-red'" x-text="'$' + (t.pnl || 0).toFixed(2)"></td>
+                            <td :class="(t.pnl_pct || 0) >= 0 ? 'text-green' : 'text-red'" x-text="((t.pnl_pct || 0) * 100).toFixed(2) + '%'"></td>
+                            <td x-text="t.holding_period_days || 0"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p x-show="trades.length === 0" class="text-muted">No paper trades yet. Run a backtest to generate trades.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function tradesPage() {
+    return {
+        trades: [],
+        chart: null,
+
+        get winCount() { return this.trades.filter(t => (t.pnl || 0) > 0).length; },
+        get lossCount() { return this.trades.filter(t => (t.pnl || 0) <= 0).length; },
+        get totalPnl() { return this.trades.reduce((s, t) => s + (t.pnl || 0), 0); },
+
+        async init() {
+            await this.refresh();
+            setInterval(() => this.refresh(), 60000);
+        },
+
+        async refresh() {
+            try {
+                const res = await fetch('/api/trades');
+                if (res.ok) {
+                    this.trades = await res.json();
+                    this.renderChart();
+                }
+            } catch (e) { console.error('Refresh failed:', e); }
+        },
+
+        renderChart() {
+            const ctx = document.getElementById('equityChart');
+            if (!ctx || this.trades.length === 0) return;
+            if (this.chart) this.chart.destroy();
+
+            let equity = 100000;
+            const labels = [];
+            const values = [];
+            this.trades.forEach((t, i) => {
+                equity += t.pnl || 0;
+                labels.push('Trade ' + (i + 1));
+                values.push(equity);
+            });
+
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Equity',
+                        data: values,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }
+                    }
+                }
+            });
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Overview — Trading Intelligence{% endblock %}
+
+{% block content %}
+<div class="page" x-data="dashboardOverview()" x-init="init()">
+    <h1 class="page-title">Market Overview</h1>
+
+    <!-- Market Summary Cards -->
+    <section class="section">
+        <h2 class="section-title">Market Summary</h2>
+        <div class="card-grid">
+            <template x-for="item in data.market_summary" :key="item.symbol">
+                <div class="card">
+                    <div class="card-header" x-text="item.symbol"></div>
+                    <div class="card-body">
+                        <span class="card-value" x-text="formatPrice(item.close)"></span>
+                    </div>
+                    <div class="card-footer text-muted" x-text="formatTime(item.timestamp)"></div>
+                </div>
+            </template>
+        </div>
+    </section>
+
+    <!-- Stats Row -->
+    <section class="section">
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" x-text="data.tracked_symbols || 0"></div>
+                <div class="stat-label">Tracked Symbols</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" x-text="data.active_strategies || 0"></div>
+                <div class="stat-label">Active Strategies</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" x-text="(data.active_signals?.total || 0)"></div>
+                <div class="stat-label">Total Signals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-green" x-text="(data.active_signals?.buy || 0)"></div>
+                <div class="stat-label">Buy Signals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-red" x-text="(data.active_signals?.sell || 0)"></div>
+                <div class="stat-label">Sell Signals</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Active Signals -->
+    <section class="section">
+        <h2 class="section-title">Active Signals</h2>
+        <div class="table-wrap">
+            <table class="table" x-show="signals.length > 0">
+                <thead>
+                    <tr>
+                        <th>Strategy</th>
+                        <th>Symbol</th>
+                        <th>Direction</th>
+                        <th>Confidence</th>
+                        <th>Reasoning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="s in signals" :key="s.strategy_id + s.symbol">
+                        <tr>
+                            <td x-text="s.strategy_id"></td>
+                            <td x-text="s.symbol"></td>
+                            <td>
+                                <span class="badge" :class="s.direction > 0 ? 'badge-green' : s.direction < 0 ? 'badge-red' : 'badge-gray'"
+                                      x-text="s.direction > 0 ? 'BUY' : s.direction < 0 ? 'SELL' : 'NEUTRAL'"></span>
+                            </td>
+                            <td x-text="(s.confidence * 100).toFixed(1) + '%'"></td>
+                            <td class="text-muted" x-text="s.reasoning"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p x-show="signals.length === 0" class="text-muted">No active signals.</p>
+        </div>
+    </section>
+
+    <!-- Recent Trades -->
+    <section class="section">
+        <h2 class="section-title">Recent Trades</h2>
+        <div class="table-wrap">
+            <table class="table" x-show="(data.recent_trades || []).length > 0">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Direction</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>P&L</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="t in (data.recent_trades || [])" :key="t.id || t.timestamp">
+                        <tr>
+                            <td x-text="t.symbol"></td>
+                            <td x-text="t.direction"></td>
+                            <td x-text="formatPrice(t.entry_price)"></td>
+                            <td x-text="formatPrice(t.exit_price)"></td>
+                            <td :class="t.pnl >= 0 ? 'text-green' : 'text-red'" x-text="'$' + t.pnl?.toFixed(2)"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <p x-show="(data.recent_trades || []).length === 0" class="text-muted">No trades yet.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboardOverview() {
+    return {
+        data: {},
+        signals: [],
+        async init() {
+            await this.refresh();
+            setInterval(() => this.refresh(), 60000);
+        },
+        async refresh() {
+            try {
+                const [overviewRes, signalsRes] = await Promise.all([
+                    fetch('/api/overview'),
+                    fetch('/api/signals')
+                ]);
+                if (overviewRes.ok) this.data = await overviewRes.json();
+                if (signalsRes.ok) this.signals = await signalsRes.json();
+            } catch (e) { console.error('Refresh failed:', e); }
+        },
+        formatPrice(v) { return v != null ? '$' + Number(v).toFixed(2) : '—'; },
+        formatTime(t) { return t ? new Date(t).toLocaleString() : '—'; }
+    };
+}
+</script>
+{% endblock %}

@@ -25,9 +25,11 @@ configs/*_config.yaml  # contains API keys
 
 # Output
 *.png
-*.html
 output/
 reports/
+
+# Keep dashboard templates (but ignore generated HTML elsewhere)
+!src/dashboard/templates/*.html
 
 # OS
 .DS_Store

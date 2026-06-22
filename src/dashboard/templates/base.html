@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Trading Intelligence{% endblock %}</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body x-data="{ darkMode: true }" :class="{ 'dark': darkMode }">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/" class="nav-logo">📈 Trading Intelligence</a>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link {% if page == 'overview' %}active{% endif %}">Overview</a>
+            <a href="/markets" class="nav-link {% if page == 'markets' %}active{% endif %}">Markets</a>
+            <a href="/strategies" class="nav-link {% if page == 'strategies' %}active{% endif %}">Strategies</a>
+            <a href="/sentiment" class="nav-link {% if page == 'sentiment' %}active{% endif %}">Sentiment</a>
+            <a href="/trades" class="nav-link {% if page == 'trades' %}active{% endif %}">Trades</a>
+            <a href="/settings" class="nav-link {% if page == 'settings' %}active{% endif %}">Settings</a>
+        </div>
+        <div class="nav-right">
+            <span class="nav-status" x-data="{ status: 'connecting' }" x-init="
+                fetch('/api/overview').then(r => r.ok ? status = 'connected' : status = 'error').catch(() => status = 'error')
+            ">
+                <span class="status-dot" :class="'status-' + status"></span>
+                <span x-text="status" class="status-text"></span>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Trading Intelligence Dashboard v0.1.0 · Auto-refresh: 60s</p>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
