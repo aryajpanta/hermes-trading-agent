@@ -1,0 +1,26 @@
+id: fibonacci_retracement
+name: "Fibonacci Retracement"
+source: "Leonardo Fibonacci"
+description: "Buy at key Fibonacci retracement levels (38.2%, 50%, 61.8%), sell near extension targets."
+category: breakout
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "Price retraces to 38.2% or 61.8% Fibonacci level"
+  - "Price shows reversal candle at fib level"
+  - "Volume confirms the bounce at the level"
+exit_rules:
+  - "Price reaches 0% extension (previous high/low)"
+  - "Price breaks below 78.6% retracement (invalidation)"
+  - "Target at 127.2% or 161.8% extension reached"
+stop_loss_pct: 0.03
+take_profit_pct: 0.08
+position_size_pct: 0.05
+max_holding_period: 30
+min_confidence: 0.6

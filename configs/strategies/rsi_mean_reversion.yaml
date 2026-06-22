@@ -1,0 +1,24 @@
+id: rsi_mean_reversion
+name: "RSI Mean Reversion (30/70)"
+source: "Welles Wilder"
+description: "Buy when RSI < 30 (oversold), sell when RSI > 70 (overbought)."
+category: mean_reversion
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "RSI(14) drops below 30 (oversold condition)"
+  - "Price shows signs of reversal (higher low or bullish candle)"
+exit_rules:
+  - "RSI(14) rises above 70 (overbought condition)"
+  - "RSI crosses back above 50 from oversold"
+stop_loss_pct: 0.03
+take_profit_pct: 0.06
+position_size_pct: 0.05
+max_holding_period: 10
+min_confidence: 0.55

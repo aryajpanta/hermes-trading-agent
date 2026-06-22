@@ -1,0 +1,28 @@
+id: oneil_canslim
+name: "O'Neil CANSLIM"
+source: "William O'Neil"
+description: "Growth momentum: buy leading stocks with strong earnings, relative strength, and institutional sponsorship."
+category: growth
+timeframes:
+  - 1d
+  - 1w
+assets:
+  - stocks
+entry_rules:
+  - "Current quarterly EPS up 25%+ YoY (C: Current Earnings)"
+  - "Annual EPS growth 25%+ over 3-5 years (A: Annual Growth)"
+  - "New product/service/mgmt driving growth (N: New)"
+  - "Supply/demand: heavy volume on up days (S: Supply/Demand)"
+  - "Leader in group, RS rank top 20% (L: Leader/Ideology)"
+  - "Institutional ownership increasing (I: Institutional Sponsorship)"
+  - "Market in confirmed uptrend (M: Market Direction)"
+exit_rules:
+  - "Sell on 7-8% loss from purchase price"
+  - "Sell if stock drops below 50-day MA on heavy volume"
+  - "Sell after 20-25% gain or if gain stalls"
+  - "Sell if earnings growth decelerates"
+stop_loss_pct: 0.08
+take_profit_pct: 0.25
+position_size_pct: 0.05
+max_holding_period: 90
+min_confidence: 0.65

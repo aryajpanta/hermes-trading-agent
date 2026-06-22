@@ -1,0 +1,26 @@
+id: turtle_trading
+name: "Turtle Trading System"
+source: "Richard Dennis"
+description: "Enter on 20-day high breakout, exit on 10-day low breakout. ATR-based position sizing."
+category: trend
+timeframes:
+  - 1d
+  - 1w
+assets:
+  - stocks
+  - crypto
+  - forex
+  - commodities
+entry_rules:
+  - "Price breaks above 20-day high"
+  - "ATR(20) confirms sufficient volatility"
+  - "Position size = 1% risk / (2 * ATR)"
+exit_rules:
+  - "Price breaks below 10-day low"
+  - "Trailing stop at 2 * ATR from entry"
+  - "System 2: 55-day breakout exit"
+stop_loss_pct: 0.02
+take_profit_pct: 0.10
+position_size_pct: 0.02
+max_holding_period: 0
+min_confidence: 0.65

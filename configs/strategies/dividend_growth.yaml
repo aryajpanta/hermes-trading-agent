@@ -1,0 +1,28 @@
+id: dividend_growth
+name: "Dividend Growth"
+source: "Peter Lynch"
+description: "Buy quality companies with consistent dividend growth and reasonable valuation."
+category: value
+timeframes:
+  - 1d
+  - 1w
+  - 1m
+assets:
+  - stocks
+entry_rules:
+  - "Dividend yield > 2%"
+  - "Dividend payout ratio < 60%"
+  - "Consecutive dividend increases for 10+ years (Dividend Aristocrat)"
+  - "P/E ratio below sector average"
+  - "Debt-to-equity ratio < 1.0"
+  - "Price-to-earnings growth (PEG) ratio < 1.5"
+exit_rules:
+  - "Dividend cut or freeze announced"
+  - "Payout ratio exceeds 80%"
+  - "Stock becomes overvalued (P/E > 30 or PEG > 3)"
+  - "Better opportunities available at lower risk"
+stop_loss_pct: 0.10
+take_profit_pct: 0.30
+position_size_pct: 0.10
+max_holding_period: 0
+min_confidence: 0.6

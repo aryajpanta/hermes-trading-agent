@@ -1,0 +1,26 @@
+id: stochastic_oscillator
+name: "Stochastic Oscillator"
+source: "Lane"
+description: "Buy when %K crosses above %D below 20, sell when %K crosses below %D above 80."
+category: momentum
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "%K crosses above %D in oversold zone (below 20)"
+  - "Both %K and %D are below 30"
+  - "Stochastic %K turns upward from below 20"
+exit_rules:
+  - "%K crosses below %D in overbought zone (above 80)"
+  - "Both %K and %D are above 70"
+  - "Stochastic %K turns downward from above 80"
+stop_loss_pct: 0.03
+take_profit_pct: 0.06
+position_size_pct: 0.05
+max_holding_period: 15
+min_confidence: 0.55

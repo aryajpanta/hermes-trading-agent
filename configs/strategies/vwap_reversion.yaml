@@ -1,0 +1,25 @@
+id: vwap_reversion
+name: "VWAP Reversion"
+source: "Institutional"
+description: "Buy when price is significantly below VWAP, sell when above."
+category: mean_reversion
+timeframes:
+  - 1h
+  - 5m
+  - 15m
+assets:
+  - stocks
+  - crypto
+entry_rules:
+  - "Price is > 2 standard deviations below VWAP"
+  - "Volume confirms the move (above average)"
+  - "Price shows reversal candle near VWAP deviation band"
+exit_rules:
+  - "Price returns to VWAP"
+  - "Price reaches +1 standard deviation above VWAP"
+  - "End of trading session (for intraday)"
+stop_loss_pct: 0.02
+take_profit_pct: 0.04
+position_size_pct: 0.03
+max_holding_period: 1
+min_confidence: 0.6

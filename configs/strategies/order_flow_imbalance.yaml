@@ -1,0 +1,28 @@
+id: order_flow_imbalance
+name: "Order Flow Imbalance"
+source: "Prop trading"
+description: "Detect buyer/seller imbalance using volume and price action analysis."
+category: momentum
+timeframes:
+  - 5m
+  - 15m
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - futures
+entry_rules:
+  - "Positive volume delta > 2x average (buying pressure)"
+  - "Price closes in upper 20% of bar range with high volume"
+  - "Successive higher closes with increasing volume"
+  - "Large volume bar with narrow range (accumulation)"
+exit_rules:
+  - "Negative volume delta appears"
+  - "Price closes in lower 20% of bar range on high volume"
+  - "Volume divergence: price up but volume declining"
+  - "Large range bar with decreasing volume (distribution)"
+stop_loss_pct: 0.02
+take_profit_pct: 0.05
+position_size_pct: 0.03
+max_holding_period: 5
+min_confidence: 0.65

@@ -1,0 +1,24 @@
+id: volume_profile
+name: "Volume Profile"
+source: "Market profile theory"
+description: "Identify key price levels from volume distribution. Buy at support, sell at resistance."
+category: breakout
+timeframes:
+  - 1d
+  - 4h
+assets:
+  - stocks
+  - crypto
+entry_rules:
+  - "Price approaches Point of Control (POC) from above (support)"
+  - "Price breaks above Value Area High (VAH) on volume"
+  - "Volume profile shows P-shaped or b-shaped distribution"
+exit_rules:
+  - "Price reaches next high-volume node"
+  - "Price falls back below Value Area Low (VAL)"
+  - "Volume dries up near target level"
+stop_loss_pct: 0.03
+take_profit_pct: 0.06
+position_size_pct: 0.05
+max_holding_period: 20
+min_confidence: 0.6

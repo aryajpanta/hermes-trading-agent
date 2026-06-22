@@ -1,0 +1,28 @@
+id: ichimoku_cloud
+name: "Ichimoku Cloud"
+source: "Goichi Hosoda"
+description: "Multi-line trend system: price above cloud is bullish, below is bearish."
+category: trend
+timeframes:
+  - 1d
+  - 4h
+  - 1w
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "Price above Kumo cloud (Senkou A and B)"
+  - "Tenkan-sen crosses above Kijun-sen (TK cross)"
+  - "Chikou span above price from 26 periods ago"
+  - "Cloud is green (Senkou A > Senkou B)"
+exit_rules:
+  - "Price closes below Kumo cloud"
+  - "Tenkan-sen crosses below Kijun-sen"
+  - "Chikou span crosses below price"
+  - "Cloud changes color (bearish turn)"
+stop_loss_pct: 0.04
+take_profit_pct: 0.12
+position_size_pct: 0.05
+max_holding_period: 0
+min_confidence: 0.6

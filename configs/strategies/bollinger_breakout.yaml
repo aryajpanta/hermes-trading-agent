@@ -1,0 +1,26 @@
+id: bollinger_breakout
+name: "Bollinger Band Breakout"
+source: "John Bollinger"
+description: "Trade breakouts above/below Bollinger Bands with volume confirmation."
+category: breakout
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "Price closes above upper Bollinger Band (20, 2)"
+  - "Volume is above 20-period average volume"
+  - "Bandwidth is expanding (volatility increasing)"
+exit_rules:
+  - "Price closes below middle band (20-period SMA)"
+  - "Price closes inside bands after breakout"
+  - "Bandwidth starts contracting"
+stop_loss_pct: 0.03
+take_profit_pct: 0.08
+position_size_pct: 0.05
+max_holding_period: 15
+min_confidence: 0.6

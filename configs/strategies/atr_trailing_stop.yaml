@@ -1,0 +1,26 @@
+id: atr_trailing_stop
+name: "ATR Trailing Stop"
+source: "Wilder"
+description: "Trend-following with ATR-based trailing stops for adaptive risk management."
+category: trend
+timeframes:
+  - 1d
+  - 4h
+assets:
+  - stocks
+  - crypto
+  - forex
+  - commodities
+entry_rules:
+  - "Price breaks above 20-day high"
+  - "ATR(14) confirms volatility is expanding"
+  - "Trailing stop set at entry price - 3 * ATR"
+exit_rules:
+  - "Price closes below 3x ATR trailing stop"
+  - "ATR trailing stop ratchets up as price rises"
+  - "Trend reversal: price breaks 10-day low"
+stop_loss_pct: 0.03
+take_profit_pct: 0.10
+position_size_pct: 0.03
+max_holding_period: 0
+min_confidence: 0.6

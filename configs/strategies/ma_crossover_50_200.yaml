@@ -1,0 +1,23 @@
+id: ma_crossover_50_200
+name: "Moving Average Crossover (50/200)"
+source: "Trend following"
+description: "Buy on golden cross (SMA50 > SMA200), sell on death cross."
+category: trend
+timeframes:
+  - 1d
+  - 1w
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "50-period SMA crosses above 200-period SMA (golden cross)"
+  - "Price is above the 200-period SMA"
+exit_rules:
+  - "50-period SMA crosses below 200-period SMA (death cross)"
+  - "Price closes below the 200-period SMA"
+stop_loss_pct: 0.05
+take_profit_pct: 0.15
+position_size_pct: 0.05
+max_holding_period: 0
+min_confidence: 0.6

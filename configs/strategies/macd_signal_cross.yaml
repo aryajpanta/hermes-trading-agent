@@ -1,0 +1,26 @@
+id: macd_signal_cross
+name: "MACD Signal Line Cross"
+source: "Gerald Appel"
+description: "Buy on MACD bullish crossover, sell on bearish crossover."
+category: momentum
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "MACD line crosses above signal line (bullish crossover)"
+  - "MACD histogram turns positive"
+  - "Histogram is increasing (momentum acceleration)"
+exit_rules:
+  - "MACD line crosses below signal line (bearish crossover)"
+  - "MACD histogram turns negative"
+  - "Histogram is decreasing (momentum deceleration)"
+stop_loss_pct: 0.03
+take_profit_pct: 0.08
+position_size_pct: 0.05
+max_holding_period: 20
+min_confidence: 0.55
