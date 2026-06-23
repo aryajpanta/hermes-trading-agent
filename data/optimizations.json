@@ -26,5 +26,89 @@
       "reason": "Review hypothesis: random exploration"
     },
     "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:01:35.713326Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "bbPeriod",
+      "currentValue": 20.0,
+      "proposedValue": 18,
+      "min": 10,
+      "max": 30,
+      "step": 2,
+      "reason": "random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:01:35.718795Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "riskRewardRatio",
+      "currentValue": 2.5,
+      "proposedValue": 3.0,
+      "min": 1.0,
+      "max": 4.0,
+      "step": 0.5,
+      "reason": "Review hypothesis: random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:02:23.775052Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "riskPerTrade",
+      "currentValue": 0.0275,
+      "proposedValue": 0.0325,
+      "min": 0.005,
+      "max": 0.05,
+      "step": 0.005,
+      "reason": "random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:02:23.781173Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "macdSignal",
+      "currentValue": 10.0,
+      "proposedValue": 12,
+      "min": 5,
+      "max": 15,
+      "step": 2,
+      "reason": "Review hypothesis: random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:02:36.819736Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "stopLossPct",
+      "currentValue": 0.02,
+      "proposedValue": 0.025,
+      "min": 0.01,
+      "max": 0.05,
+      "step": 0.005,
+      "reason": "random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T02:02:36.824977Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "bbStdDev",
+      "currentValue": 2.25,
+      "proposedValue": 2.0,
+      "min": 1.5,
+      "max": 3.0,
+      "step": 0.25,
+      "reason": "Review hypothesis: random exploration"
+    },
+    "applied": true
   }
 ]

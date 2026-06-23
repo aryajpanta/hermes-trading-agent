@@ -44,20 +44,14 @@ class TestOptimizer:
         assert s2["rsiPeriod"] == 21
 
     def test_propose_optimization(self, strategy_path):
-        from src.automation.optimizer import propose_optimization
+        from src.automation.optimizer import OPTIMIZABLE_PARAMS, propose_optimization
 
         p = propose_optimization()
         assert p["type"] == "param_change"
-        assert p["parameter"] in (
-            "rsiPeriod", "rsiOversold", "rsiOverbought",
-            "stopLossPct", "macdFast", "macdSlow", "macdSignal",
-            "bbPeriod", "bbStdDev", "signalThreshold",
-            "riskPerTrade", "riskRewardRatio",
-        )
-        # Proposed value should be within bounds
-        spec_min = 5
-        spec_max = 30
-        assert spec_min <= p["proposedValue"] <= spec_max
+        assert p["parameter"] in OPTIMIZABLE_PARAMS
+        # Proposed value should be within bounds of its own parameter
+        spec = OPTIMIZABLE_PARAMS[p["parameter"]]
+        assert spec["min"] <= p["proposedValue"] <= spec["max"]
 
     def test_propose_with_review(self, strategy_path):
         from src.automation.optimizer import propose_optimization
