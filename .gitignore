@@ -1,45 +1,51 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-venv/
 .venv/
+venv/
 env/
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
+.DS_Store
 
-# Data
+# Test
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Data (except sample)
 data/*.db
-data/backups/
+data/*.db-shm
+data/*.db-wal
+data/cycles.json
+data/webhook_*.json
+data/optimizations.json
+data/reviews/
+data/legacy_positions.json
+data/paper_portfolio.json
+data/daily_summary.json
+data/sentiment.db
+!data/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+node_modules/
 
 # Secrets
 .env
-*.key
-configs/*_config.yaml  # contains API keys
-
-# Output
-*.png
-output/
-reports/
-
-# Keep dashboard templates (but ignore generated HTML elsewhere)
-!src/dashboard/templates/*.html
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-
-# Hermes
-.hmes/loop/archive/
+.env.local
+.env.production
