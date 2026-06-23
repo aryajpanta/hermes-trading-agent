@@ -17,6 +17,7 @@ class DataSource(str, Enum):
     YAHOO = "yahoo"
     COINGECKO = "coingecko"
     ALPHA_VANTAGE = "alpha_vantage"
+    BINANCE = "binance"
 
 
 class Symbol(BaseModel):

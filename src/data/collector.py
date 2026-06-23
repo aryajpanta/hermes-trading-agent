@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 SYMBOL_SOURCE_MAP: Dict[str, List[DataSource]] = {
     # Stocks - primarily Yahoo, Alpha Vantage as backup
     **{s: [DataSource.YAHOO, DataSource.ALPHA_VANTAGE] for s in DEFAULT_STOCKS},
-    # Crypto - CoinGecko primary, Yahoo as backup
-    **{s: [DataSource.COINGECKO, DataSource.YAHOO] for s in DEFAULT_CRYPTO},
+    # Crypto - Binance primary (real OHLCV, no rate limits), CoinGecko + Yahoo as backup
+    **{s: [DataSource.BINANCE, DataSource.COINGECKO, DataSource.YAHOO] for s in DEFAULT_CRYPTO},
     # Forex - Yahoo primary, Alpha Vantage as backup
     **{s: [DataSource.YAHOO, DataSource.ALPHA_VANTAGE] for s in DEFAULT_FOREX},
     # Commodities - Yahoo only
@@ -57,6 +57,7 @@ class MarketDataCollector:
         yahoo_enabled: bool = True,
         coingecko_enabled: bool = True,
         alphavantage_enabled: bool = True,
+        binance_enabled: bool = True,
         alphavantage_api_key: str = "",
         coingecko_api_key: str = "",
     ) -> None:
@@ -67,6 +68,7 @@ class MarketDataCollector:
             yahoo_enabled: Enable Yahoo Finance source.
             coingecko_enabled: Enable CoinGecko source.
             alphavantage_enabled: Enable Alpha Vantage source.
+            binance_enabled: Enable Binance source (crypto).
             alphavantage_api_key: Alpha Vantage API key.
             coingecko_api_key: CoinGecko API key (optional).
         """
@@ -85,6 +87,11 @@ class MarketDataCollector:
             self.sources[DataSource.ALPHA_VANTAGE] = AlphaVantageSource(
                 api_key=alphavantage_api_key
             )
+
+        if binance_enabled:
+            from src.data.sources.binance import BinanceSource
+
+            self.sources[DataSource.BINANCE] = BinanceSource()
 
         # Register data sources in storage
         for source_name, source in self.sources.items():
