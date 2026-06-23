@@ -241,13 +241,20 @@ async def api_prices(symbols: str = Query(...)) -> Dict[str, Any]:
             try:
                 import yfinance as yf
 
-                t = yf.Ticker(sym)
-                hist = t.history(period="5d")
-                if not hist.empty:
-                    price = float(hist["Close"].iloc[-1])
-                    if len(hist) >= 2:
-                        prev = float(hist["Close"].iloc[-2])
-                        change_24h = (price - prev) / prev if prev else None
+                # Try both symbol and SYMBOL-USD (different exchanges)
+                for tk in (sym, f"{sym}-USD"):
+                    t = yf.Ticker(tk)
+                    hist = t.history(period="5d")
+                    if not hist.empty:
+                        p = float(hist["Close"].iloc[-1])
+                        # Sanity check: crypto should be > $100
+                        if sym in ("BTC", "ETH", "SOL", "DOGE", "BNB", "XRP") and p < 100:
+                            continue
+                        price = p
+                        if len(hist) >= 2:
+                            prev = float(hist["Close"].iloc[-2])
+                            change_24h = (price - prev) / prev if prev else None
+                        break
             except Exception:
                 pass
         asset_class = "crypto" if sym in ("BTC", "ETH", "SOL", "DOGE", "BNB", "XRP") else "stock"

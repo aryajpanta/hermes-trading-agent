@@ -88,14 +88,17 @@ def run_tick(
                 continue
         except Exception:
             pass
-        # Fallback: CoinGecko for crypto, yfinance for stocks
+        # Fallback: yfinance (works for stocks, ETFs, and crypto with -USD suffix)
         try:
             import yfinance as yf
 
-            t = yf.Ticker(sym)
-            hist = t.history(period="1d")
-            if not hist.empty:
-                prices[sym] = float(hist["Close"].iloc[-1])
+            # Try both symbol and SYMBOL-USD
+            for tk in (sym, f"{sym}-USD"):
+                t = yf.Ticker(tk)
+                hist = t.history(period="5d")
+                if not hist.empty and float(hist["Close"].iloc[-1]) > 100:
+                    prices[sym] = float(hist["Close"].iloc[-1])
+                    break
         except Exception:
             pass
 
