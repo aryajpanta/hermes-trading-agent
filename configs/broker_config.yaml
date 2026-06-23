@@ -4,8 +4,8 @@ broker:
   name: "alpaca"
   base_url: "https://paper-api.alpaca.markets"  # paper trading
   data_url: "https://data.alpaca.markets"
-  api_key: ""  # get from alpaca.markets
-  secret_key: ""
+  api_key: "PKAQO67YFZYESILG5GY3P2LGIF"
+  secret_key: "5Zr3beR63KhhtiZWpyvv5jKpWDSvwdCAKibFx15osqLe"
 
 execution:
   mode: "PAPER"  # PAPER | LIVE (requires approval)

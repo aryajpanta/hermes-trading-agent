@@ -1,0 +1,62 @@
+{
+  "cash": 65610.0,
+  "positions": [
+    {
+      "symbol": "BTC",
+      "qty": "0.1601922307",
+      "avg_price": "62425.0000000000",
+      "current_price": "63968.0000000000",
+      "unrealized_pl": "247.1766",
+      "stop_loss": 61176.5,
+      "take_profit": 66170.5,
+      "side": "long",
+      "reason": "RSI oversold (17.1)",
+      "opened_at": "2026-06-09T13:43:16.274Z",
+      "legacy_id": "BTC_1781012596274"
+    },
+    {
+      "symbol": "ETH",
+      "qty": "5.3808763654",
+      "avg_price": "1672.5900000000",
+      "current_price": "1725.4000000000",
+      "unrealized_pl": "284.1641",
+      "stop_loss": 1639.1381999999999,
+      "take_profit": 1772.9454,
+      "side": "long",
+      "reason": "RSI oversold (21.4)",
+      "opened_at": "2026-06-09T13:43:16.274Z",
+      "legacy_id": "ETH_1781012596274"
+    },
+    {
+      "symbol": "SOL",
+      "qty": "122.8762135922",
+      "avg_price": "65.9200000000",
+      "current_price": "71.5400000000",
+      "unrealized_pl": "690.5643",
+      "stop_loss": 64.6016,
+      "take_profit": 69.8752,
+      "side": "long",
+      "reason": "RSI oversold (19.9)",
+      "opened_at": "2026-06-09T13:43:16.274Z",
+      "legacy_id": "SOL_1781012596274"
+    },
+    {
+      "symbol": "DOGE",
+      "qty": "85183.4540780556",
+      "avg_price": "0.0855800000",
+      "current_price": "0.0855800000",
+      "unrealized_pl": "0.0000",
+      "stop_loss": 0.0838684,
+      "take_profit": 0.09071480000000001,
+      "side": "long",
+      "reason": "RSI oversold (23.9)",
+      "opened_at": "2026-06-09T13:43:16.274Z",
+      "legacy_id": "DOGE_1781012596274"
+    }
+  ],
+  "starting_balance": 100000.0,
+  "legacy_source": "hermes-trading-agent",
+  "legacy_url": "https://hermes-trading-agent-production-890e.up.railway.app",
+  "migrated_at": "2026-06-23T01:47:59.677882Z",
+  "updated_at": "2026-06-23T01:47:59.677901Z"
+}

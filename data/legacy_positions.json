@@ -1,0 +1,94 @@
+{
+  "source": "hermes-trading-agent (HTA)",
+  "snapshot_at": "2026-06-23T01:47:59.677908Z",
+  "cash_usd": 65610.0,
+  "total_value": 100000,
+  "peak_balance": 100000,
+  "trade_count": 4,
+  "winning_trades": 0,
+  "losing_trades": 0,
+  "raw": {
+    "balances": {
+      "USD": 65610
+    },
+    "positions": [
+      {
+        "id": "BTC_1781012596274",
+        "symbol": "BTC",
+        "assetClass": "crypto",
+        "side": "long",
+        "quantity": 0.16019223067681218,
+        "entryPrice": 62425,
+        "currentPrice": 62425,
+        "stopLoss": 61176.5,
+        "takeProfit": 66170.5,
+        "status": "open",
+        "reason": "RSI oversold (17.1)",
+        "pnl": 0,
+        "pnlPercent": 0,
+        "openedAt": "2026-06-09T13:43:16.274Z"
+      },
+      {
+        "id": "ETH_1781012596274",
+        "symbol": "ETH",
+        "assetClass": "crypto",
+        "side": "long",
+        "quantity": 5.380876365397378,
+        "entryPrice": 1672.59,
+        "currentPrice": 1672.59,
+        "stopLoss": 1639.1381999999999,
+        "takeProfit": 1772.9454,
+        "status": "open",
+        "reason": "RSI oversold (21.4)",
+        "pnl": 0,
+        "pnlPercent": 0,
+        "openedAt": "2026-06-09T13:43:16.274Z"
+      },
+      {
+        "id": "SOL_1781012596274",
+        "symbol": "SOL",
+        "assetClass": "crypto",
+        "side": "long",
+        "quantity": 122.87621359223301,
+        "entryPrice": 65.92,
+        "currentPrice": 65.92,
+        "stopLoss": 64.6016,
+        "takeProfit": 69.8752,
+        "status": "open",
+        "reason": "RSI oversold (19.9)",
+        "pnl": 0,
+        "pnlPercent": 0,
+        "openedAt": "2026-06-09T13:43:16.274Z"
+      },
+      {
+        "id": "DOGE_1781012596274",
+        "symbol": "DOGE",
+        "assetClass": "crypto",
+        "side": "long",
+        "quantity": 85183.45407805563,
+        "entryPrice": 0.08558,
+        "currentPrice": 0.08558,
+        "stopLoss": 0.0838684,
+        "takeProfit": 0.09071480000000001,
+        "status": "open",
+        "reason": "RSI oversold (23.9)",
+        "pnl": 0,
+        "pnlPercent": 0,
+        "openedAt": "2026-06-09T13:43:16.274Z"
+      }
+    ],
+    "tradeCount": 4,
+    "winningTrades": 0,
+    "losingTrades": 0,
+    "peakBalance": 100000,
+    "createdAt": "2026-06-03T12:45:53.691Z",
+    "updatedAt": "2026-06-09T13:43:16.274Z",
+    "totalValue": 100000
+  },
+  "current_prices_at_migration": {
+    "BTC": 63968.0,
+    "SOL": 71.54,
+    "ETH": 1725.4,
+    "DOGE": null
+  }
+}
