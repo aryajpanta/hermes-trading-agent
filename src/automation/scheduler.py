@@ -149,7 +149,9 @@ def run_tick(
         "alerts_checked": alerts_result.get("checked", 0),
         "alerts_triggered": len(alerts_result.get("triggered", [])),
         "open_positions": sum(
-            1 for p in trader.portfolio.positions if p.status.value == "open"
+            1
+            for p in trader.portfolio.positions
+            if str(p.status.value).lower() == "open"
         ),
     }
     if not dry_run:
