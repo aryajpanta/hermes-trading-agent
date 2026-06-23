@@ -79,6 +79,16 @@ async def api_portfolio() -> Dict[str, Any]:
     positions = []
     for p in trader.portfolio.open_positions:
         pd = p.to_dict()
+        # Use the live market price if available; fall back to entry.
+        # Position stores unrealized_pnl which is computed from current price.
+        # We don't have a stored "current price" field, so derive from P&L.
+        # P&L = (current - entry) * qty for LONG
+        if p.quantity > 0 and p.direction.value == "LONG":
+            current_price = p.entry_price + (p.unrealized_pnl / p.quantity)
+        elif p.quantity > 0:
+            current_price = p.entry_price - (p.unrealized_pnl / p.quantity)
+        else:
+            current_price = p.entry_price
         positions.append(
             {
                 "id": f"{p.symbol}_{p.entry_time.isoformat() if p.entry_time else 'unknown'}",
@@ -87,13 +97,13 @@ async def api_portfolio() -> Dict[str, Any]:
                 "side": "long" if p.direction.value == "LONG" else "short",
                 "quantity": p.quantity,
                 "entryPrice": p.entry_price,
-                "currentPrice": p.entry_price,  # not stored separately; entry is fallback
-                "currentValue": p.quantity * p.entry_price,
+                "currentPrice": round(current_price, 4),
+                "currentValue": round(p.quantity * current_price, 4),
                 "stopLoss": p.stop_loss,
                 "takeProfit": p.take_profit,
                 "status": p.status.value,
                 "reason": p.strategy_id,
-                "pnl": p.unrealized_pnl,
+                "pnl": round(p.unrealized_pnl, 4),
                 "openedAt": p.entry_time.isoformat() if p.entry_time else None,
                 "raw": pd,
             }
