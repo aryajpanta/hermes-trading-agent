@@ -57,7 +57,7 @@ async def api_status() -> Dict[str, Any]:
         "status": "running",
         "portfolio": {
             "cashBalance": portfolio.get("cash", 0),
-            "openPositions": portfolio.get("positions_count", 0),
+            "openPositions": len(trader.portfolio.open_positions),
             "totalValue": portfolio.get("total_value", 0),
             "totalTrades": len(trader.get_history() or []),
             "winningTrades": portfolio.get("winning_trades", 0),
