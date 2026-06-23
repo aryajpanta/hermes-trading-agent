@@ -103,12 +103,23 @@ class PaperTrader:
         path.parent.mkdir(parents=True, exist_ok=True)
         data = {
             "cash": self.portfolio.cash,
-            "positions": [
+            "positions": [],
+            "updated_at": datetime.utcnow().isoformat() + "Z",
+        }
+        for p in self.portfolio.open_positions:
+            # Derive current price from unrealized P&L if present
+            if p.quantity > 0 and p.direction.value == "LONG" and p.unrealized_pnl != 0:
+                cur = p.entry_price + (p.unrealized_pnl / p.quantity)
+            elif p.quantity > 0 and p.unrealized_pnl != 0:
+                cur = p.entry_price - (p.unrealized_pnl / p.quantity)
+            else:
+                cur = p.entry_price
+            data["positions"].append(
                 {
                     "symbol": p.symbol,
                     "qty": str(p.quantity),
                     "avg_price": str(p.entry_price),
-                    "current_price": str(p.entry_price),
+                    "current_price": str(cur),
                     "unrealized_pl": str(p.unrealized_pnl),
                     "stop_loss": p.stop_loss,
                     "take_profit": p.take_profit,
@@ -116,10 +127,7 @@ class PaperTrader:
                     "reason": p.strategy_id,
                     "opened_at": p.entry_time.isoformat() if p.entry_time else None,
                 }
-                for p in self.portfolio.open_positions
-            ],
-            "updated_at": datetime.utcnow().isoformat() + "Z",
-        }
+            )
         with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
