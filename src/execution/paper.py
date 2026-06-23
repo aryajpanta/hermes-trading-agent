@@ -8,10 +8,14 @@ Usage:
 import argparse
 import csv
 import json
+import logging
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # Ensure project root is on the path so `src.*` imports work when run as -m
 _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,6 +45,83 @@ class PaperTrader:
     def __init__(self, starting_capital: float = 100_000.0) -> None:
         self.portfolio = Portfolio(cash=starting_capital)
         self._trade_history: List[Dict[str, Any]] = []
+        # Auto-load from data/paper_portfolio.json if it exists
+        self._load_from_disk()
+
+    def _portfolio_path(self) -> Path:
+        return Path(os.environ.get("PAPER_PORTFOLIO_PATH", "data/paper_portfolio.json"))
+
+    def _load_from_disk(self) -> bool:
+        """Load portfolio state from disk if it exists.
+
+        Returns True if loaded successfully.
+        """
+        path = self._portfolio_path()
+        if not path.exists():
+            return False
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except Exception as e:
+            logger.warning(f"Could not load portfolio: {e}")
+            return False
+
+        # Restore cash
+        self.portfolio.cash = float(data.get("cash", 100_000.0))
+        self.portfolio._starting_capital = self.portfolio.cash
+        self.portfolio.total_value = self.portfolio.cash
+
+        # Restore positions
+        from src.execution.position import Direction, Position, PositionStatus
+
+        for p in data.get("positions", []):
+            try:
+                qty = float(p.get("qty", 0))
+                entry = float(p.get("avg_price", 0))
+                cur = float(p.get("current_price", entry))
+                pos = Position(
+                    symbol=p.get("symbol", ""),
+                    direction=Direction.LONG,
+                    entry_price=entry,
+                    quantity=qty,
+                    stop_loss=float(p.get("stop_loss", 0) or 0),
+                    take_profit=float(p.get("take_profit", 0) or 0),
+                    strategy_id=p.get("reason", "migrated"),
+                    status=PositionStatus.OPEN,
+                )
+                # Compute unrealized P&L from current price
+                pos.update_unrealized_pnl(cur)
+                self.portfolio.positions.append(pos)
+            except Exception as e:
+                logger.warning(f"Failed to load position {p}: {e}")
+
+        return True
+
+    def save_to_disk(self) -> None:
+        """Save current portfolio state to disk."""
+        path = self._portfolio_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "cash": self.portfolio.cash,
+            "positions": [
+                {
+                    "symbol": p.symbol,
+                    "qty": str(p.quantity),
+                    "avg_price": str(p.entry_price),
+                    "current_price": str(p.entry_price),
+                    "unrealized_pl": str(p.unrealized_pnl),
+                    "stop_loss": p.stop_loss,
+                    "take_profit": p.take_profit,
+                    "side": p.direction.value.lower(),
+                    "reason": p.strategy_id,
+                    "opened_at": p.entry_time.isoformat() if p.entry_time else None,
+                }
+                for p in self.portfolio.open_positions
+            ],
+            "updated_at": datetime.utcnow().isoformat() + "Z",
+        }
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2, default=str)
 
     def execute_signal(self, signal: Dict[str, Any]) -> Optional[Position]:
         """Execute a trade signal to open or close a position.

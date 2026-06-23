@@ -1,0 +1,34 @@
+[
+  {
+    "symbol": "BTC",
+    "asset_class": "crypto",
+    "action": "alert",
+    "price": 0.0,
+    "qty": 0.0,
+    "strategy": "default",
+    "message": "test",
+    "interval": "",
+    "received_at": "2026-06-23T01:58:13.949636Z",
+    "raw": {
+      "symbol": "BTC",
+      "action": "alert",
+      "message": "test"
+    }
+  },
+  {
+    "symbol": "BTC",
+    "asset_class": "crypto",
+    "action": "alert",
+    "price": 0.0,
+    "qty": 0.0,
+    "strategy": "default",
+    "message": "smoke test",
+    "interval": "",
+    "received_at": "2026-06-23T01:59:05.364935Z",
+    "raw": {
+      "symbol": "BTC",
+      "action": "alert",
+      "message": "smoke test"
+    }
+  }
+]
