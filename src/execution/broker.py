@@ -115,8 +115,18 @@ class AlpacaBroker:
         config: Optional[ExecutionConfig] = None,
         base_url: Optional[str] = None,
     ) -> None:
-        self._api_key = api_key or os.environ.get("ALPACA_API_KEY", "")
-        self._secret_key = secret_key or os.environ.get("ALPACA_SECRET_KEY", "")
+        self._api_key = (
+            api_key
+            or os.environ.get("ALPACA_API_KEY")
+            or os.environ.get("ALPACA_API_KEY_ID")
+            or ""
+        )
+        self._secret_key = (
+            secret_key
+            or os.environ.get("ALPACA_SECRET_KEY")
+            or os.environ.get("ALPACA_SECRET")
+            or ""
+        )
         self._base_url = base_url
         self._client: Any = None  # TradingClient, set on connect()
         self._connected = False
