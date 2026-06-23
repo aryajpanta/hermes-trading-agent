@@ -423,3 +423,55 @@ async def api_sentiment(symbol: str) -> Dict[str, Any]:
             "reason": "GEMINI_API_KEY not configured",
         }
     return {"symbol": symbol.upper(), **g.fetch_sentiment(symbol)}
+
+
+# ── Migration helpers (one-time) ───────────────────────────
+
+
+@router.post("/admin/migrate-portfolio")
+async def api_migrate_portfolio(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Migrate a legacy HTA portfolio into the local paper portfolio.
+
+    Body: {"cash": 65610, "positions": [...], "source": "hta"}
+    """
+    from src.execution.paper import PaperTrader
+
+    trader = PaperTrader()
+    payload_cash = float(payload.get("cash", trader.portfolio.cash))
+    payload_positions = payload.get("positions", [])
+
+    # Wipe existing positions and replace
+    trader.portfolio.positions = []
+    trader.portfolio.cash = payload_cash
+
+    from src.execution.position import Direction, Position, PositionStatus
+
+    for p in payload_positions:
+        try:
+            sym = p.get("symbol", "")
+            qty = float(p.get("quantity", 0))
+            entry = float(p.get("entryPrice", 0))
+            if not sym or qty <= 0 or entry <= 0:
+                continue
+            cur = float(p.get("currentPrice", entry))
+            pos = Position(
+                symbol=sym,
+                direction=Direction.LONG,
+                entry_price=entry,
+                quantity=qty,
+                stop_loss=float(p.get("stopLoss", 0) or 0),
+                take_profit=float(p.get("takeProfit", 0) or 0),
+                strategy_id=p.get("reason", "migrated"),
+                status=PositionStatus.OPEN,
+            )
+            pos.update_unrealized_pnl(cur)
+            trader.portfolio.positions.append(pos)
+        except Exception as e:
+            logger.warning(f"Migrate position failed: {e}")
+
+    trader.save_to_disk()
+    return {
+        "status": "ok",
+        "cash": trader.portfolio.cash,
+        "positions": len(trader.portfolio.open_positions),
+    }
