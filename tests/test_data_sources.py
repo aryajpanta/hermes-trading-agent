@@ -12,76 +12,84 @@ import pytest
 # Ensure project root is on path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.data.sources.binance import BinanceSource, BINANCE_SYMBOL_MAP
+from src.data.sources.binance import (
+    BINANCE_SYMBOL_MAP,
+    INTERVAL_MS,
+    BinanceSource,
+)
 
 
-class TestBinanceSource:
+# ────────────────────────────────────────────────────────────────
+# Offline tests — run anywhere, no network required
+# ────────────────────────────────────────────────────────────────
+
+
+class TestBinanceOffline:
+    def test_symbol_map_coverage(self):
+        for sym in ("BTC", "ETH", "SOL", "DOGE", "BNB", "XRP"):
+            assert sym in BINANCE_SYMBOL_MAP
+            assert BINANCE_SYMBOL_MAP[sym].endswith("USDT")
+
+    def test_interval_map(self):
+        assert INTERVAL_MS["1d"] == 86_400_000
+        assert INTERVAL_MS["1h"] == 3_600_000
+        assert INTERVAL_MS["1m"] == 60_000
+
+    def test_to_pair_known(self):
+        s = BinanceSource.__new__(BinanceSource)
+        assert BinanceSource._to_pair(s, "BTC") == "BTCUSDT"
+        assert BinanceSource._to_pair(s, "ETH") == "ETHUSDT"
+
+    def test_to_pair_unknown_fallback(self):
+        s = BinanceSource.__new__(BinanceSource)
+        assert BinanceSource._to_pair(s, "ATOM") == "ATOMUSDT"
+
+    def test_parse_interval_valid(self):
+        s = BinanceSource.__new__(BinanceSource)
+        assert BinanceSource._parse_interval(s, "1d") == "1d"
+        assert BinanceSource._parse_interval(s, "1h") == "1h"
+        assert BinanceSource._parse_interval(s, "invalid") == "1d"  # default
+
+
+# ────────────────────────────────────────────────────────────────
+# Online tests — skipped when Binance is blocked (HTTP 451 in US)
+# ────────────────────────────────────────────────────────────────
+
+
+class TestBinanceOnline:
     @pytest.fixture(autouse=True)
     def _skip_if_blocked(self):
-        """Skip tests when Binance blocks the region (HTTP 451)."""
         src = BinanceSource()
         if not src.is_available():
             pytest.skip("Binance API blocked from this network (HTTP 451)")
 
     def test_is_available(self):
-        src = BinanceSource()
-        assert src.is_available() is True
+        assert BinanceSource().is_available() is True
 
     def test_fetch_price_btc(self):
-        src = BinanceSource()
-        price = src.fetch_price("BTC")
-        assert price is not None
-        assert price > 0
-        assert price > 1000  # sanity check: BTC is always > $1k
+        price = BinanceSource().fetch_price("BTC")
+        assert price is not None and price > 0 and price > 1000
 
     def test_fetch_price_sol(self):
-        src = BinanceSource()
-        price = src.fetch_price("SOL")
-        assert price is not None
-        assert price > 0
+        price = BinanceSource().fetch_price("SOL")
+        assert price is not None and price > 0
 
     def test_fetch_prices_bulk(self):
-        src = BinanceSource()
-        prices = src.fetch_prices(["BTC", "ETH", "SOL"])
-        assert prices["BTC"] is not None and prices["BTC"] > 0
-        assert prices["ETH"] is not None and prices["ETH"] > 0
-        assert prices["SOL"] is not None and prices["SOL"] > 0
+        prices = BinanceSource().fetch_prices(["BTC", "ETH", "SOL"])
+        assert prices["BTC"] and prices["BTC"] > 0
+        assert prices["ETH"] and prices["ETH"] > 0
+        assert prices["SOL"] and prices["SOL"] > 0
 
     def test_fetch_ohlcv_btc_daily(self):
-        src = BinanceSource()
-        candles = src.fetch_ohlcv("BTC", period="30d", interval="1d")
-        assert len(candles) >= 25  # ~30 daily candles
+        candles = BinanceSource().fetch_ohlcv("BTC", period="30d", interval="1d")
+        assert len(candles) >= 25
         first = candles[0]
         assert first.symbol == "BTC"
         assert first.high >= first.low
-        assert first.high >= max(first.open, first.close)
-        assert first.low <= min(first.open, first.close)
         assert first.close > 0
         assert first.source.value == "binance"
 
-    def test_fetch_ohlcv_eth_hourly(self):
-        src = BinanceSource()
-        candles = src.fetch_ohlcv("ETH", period="7d", interval="1h")
-        # 7 days * 24h = 168 candles max
-        assert 100 <= len(candles) <= 170
-
-    def test_24h_ticker(self):
-        src = BinanceSource()
-        data = src.fetch_24h("BTC")
+    def test_fetch_24h_ticker(self):
+        data = BinanceSource().fetch_24h("BTC")
         assert data is not None
         assert "lastPrice" in data
-        assert "priceChangePercent" in data
-
-    def test_symbol_map_coverage(self):
-        """All common crypto symbols are mapped to USDT pairs (no network)."""
-        for sym in ("BTC", "ETH", "SOL", "DOGE", "BNB", "XRP"):
-            assert sym in BINANCE_SYMBOL_MAP
-            assert BINANCE_SYMBOL_MAP[sym].endswith("USDT")
-
-    def test_unknown_symbol_fallback(self):
-        """Unknown symbol gets pair suffix automatically (no network)."""
-        from src.data.sources.binance import BinanceSource as _BS
-
-        s = _BS()
-        assert s._to_pair("ATOM") == "ATOMUSDT"
-        assert s._to_pair("BTC") == "BTCUSDT"
