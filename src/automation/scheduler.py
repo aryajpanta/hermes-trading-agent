@@ -106,6 +106,11 @@ def run_tick(
     trader = PaperTrader()
     if prices:
         trader.update_positions(prices)
+        # Persist so /api/portfolio reflects the latest unrealized P&L
+        try:
+            trader.save_to_disk()
+        except Exception as e:
+            logger.debug(f"save_to_disk skipped: {e}")
 
     # 3. Auto-close SL/TP breaches
     closed: List[Dict[str, Any]] = []
