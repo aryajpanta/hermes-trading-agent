@@ -12,23 +12,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System dependencies for TA-Lib (compiled C lib)
+# System dependencies (minimal — no TA-Lib compile in production)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        wget \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install TA-Lib C library (needed by ta-lib python package)
-RUN wget -qO- https://sourceforge.net/projects/ta-lib/files/ta-lib/0.4.0/ta-lib-0.4.0-src.tar.gz/download \
-    | tar -xz -C /tmp/ \
-    && cd /tmp/ta-lib \
-    && ./configure --prefix=/usr \
-    && make -j$(nproc) \
-    && make install \
-    && rm -rf /tmp/ta-lib
-
 # Python dependencies
-COPY requirements.txt .
+COPY requirements-prod.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Application code
@@ -40,7 +30,7 @@ VOLUME ["/app/data"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health', timeout=5).read()" || exit 1
+    CMD curl -fsS http://localhost:${PORT:-8000}/health || exit 1
 
 # Expose port (Railway sets $PORT automatically)
 EXPOSE 8000
