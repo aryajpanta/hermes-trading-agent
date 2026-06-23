@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2026-06-23T01:56:10.317052Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "rsiPeriod",
+      "currentValue": 21.0,
+      "proposedValue": 22,
+      "min": 5,
+      "max": 30,
+      "step": 1,
+      "reason": "random exploration"
+    },
+    "applied": true
+  },
+  {
+    "timestamp": "2026-06-23T01:56:10.322582Z",
+    "proposal": {
+      "type": "param_change",
+      "parameter": "rsiOverbought",
+      "currentValue": 70.0,
+      "proposedValue": 75,
+      "min": 55,
+      "max": 85,
+      "step": 5,
+      "reason": "Review hypothesis: random exploration"
+    },
+    "applied": true
+  }
+]
