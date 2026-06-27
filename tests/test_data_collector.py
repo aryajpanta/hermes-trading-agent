@@ -424,8 +424,11 @@ class TestMarketDataStorage:
         latest = storage_with_data.get_latest("AAPL")
         assert latest is not None
         assert latest.symbol == "AAPL"
-        # Should be the last date in our batch
-        assert latest.timestamp.day in (10, 11)  # timezone-dependent
+        # Latest = last record in the batch: base_date (utcnow()-20d) + 9d, i.e.
+        # utcnow()-11d. Compare dynamically (the old hardcoded `day in (10, 11)`
+        # only passed ~2 days a month); allow ±1 day for storage tz round-trip.
+        expected = (datetime.utcnow() - timedelta(days=11)).date()
+        assert abs((latest.timestamp.date() - expected).days) <= 1
 
     def test_get_latest_no_data(self, storage: MarketDataStorage) -> None:
         """Test getting latest when no data exists."""

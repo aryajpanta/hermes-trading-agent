@@ -1,6 +1,6 @@
 # Production requirements for the unified trading system.
 # Optimized for Docker build speed and image size.
-# Excludes heavy ML deps (FinBERT) by default — Gemini is the primary sentiment.
+# Excludes heavy ML deps (FinBERT) by default — OpenCode is the primary sentiment.
 
 # Web framework
 fastapi>=0.104.0
@@ -22,9 +22,8 @@ sqlalchemy>=2.0.0
 pandas>=2.1.0
 numpy>=1.25.0
 
-# Sentiment
+# Sentiment (OpenCode AI sentiment goes over HTTP via `requests`, above)
 vaderSentiment>=3.3.2
-google-generativeai>=0.3.0
 
 # Dashboard
 pydantic>=2.5.0
