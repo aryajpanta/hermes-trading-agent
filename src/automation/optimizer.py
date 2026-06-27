@@ -23,10 +23,23 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-STRATEGY_PATH = Path(
-    os.environ.get("STRATEGY_CONFIG_PATH", "data/strategy/config.yaml")
-)
-OPTIMIZATIONS_LOG = Path("data/optimizations.json")
+DEFAULT_STRATEGY_PATH = "data/strategy/config.yaml"
+DEFAULT_OPTIMIZATIONS_LOG = "data/optimizations.json"
+
+
+def _strategy_path() -> Path:
+    """Resolve the strategy YAML path on every call (not frozen at import).
+
+    Reading the env each call means STRATEGY_CONFIG_PATH is honored regardless
+    of when it is set — by tests, or by a config layer that loads after this
+    module is first imported. A module-level constant would silently ignore it.
+    """
+    return Path(os.environ.get("STRATEGY_CONFIG_PATH", DEFAULT_STRATEGY_PATH))
+
+
+def _optimizations_log_path() -> Path:
+    """Resolve the optimization-log path on every call (see _strategy_path)."""
+    return Path(os.environ.get("OPTIMIZATIONS_LOG_PATH", DEFAULT_OPTIMIZATIONS_LOG))
 
 
 # ── Parameter space ─────────────────────────────────────────
@@ -52,10 +65,11 @@ OPTIMIZABLE_PARAMS: Dict[str, Dict[str, Any]] = {
 
 
 def load_strategy() -> Optional[Dict[str, Any]]:
-    if not STRATEGY_PATH.exists():
+    path = _strategy_path()
+    if not path.exists():
         return None
     try:
-        with open(STRATEGY_PATH) as f:
+        with open(path) as f:
             return yaml.safe_load(f) or {}
     except Exception as e:
         logger.error(f"load_strategy: {e}")
@@ -63,8 +77,9 @@ def load_strategy() -> Optional[Dict[str, Any]]:
 
 
 def save_strategy(strategy: Dict[str, Any]) -> None:
-    STRATEGY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(STRATEGY_PATH, "w") as f:
+    path = _strategy_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
         yaml.dump(strategy, f, default_flow_style=False, sort_keys=False)
 
 
@@ -204,10 +219,11 @@ def run_optimization_cycle(
 
 
 def _load_log() -> List[Dict[str, Any]]:
-    if not OPTIMIZATIONS_LOG.exists():
+    path = _optimizations_log_path()
+    if not path.exists():
         return []
     try:
-        with open(OPTIMIZATIONS_LOG) as f:
+        with open(path) as f:
             return json.load(f)
     except Exception:
         return []
@@ -223,8 +239,9 @@ def _log_optimization(proposal: Dict[str, Any], applied: bool) -> None:
         }
     )
     arr = arr[-200:]
-    OPTIMIZATIONS_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with open(OPTIMIZATIONS_LOG, "w") as f:
+    path = _optimizations_log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
         json.dump(arr, f, indent=2, default=str)
 
 

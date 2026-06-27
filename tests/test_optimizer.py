@@ -23,6 +23,9 @@ def strategy_path(tmp_path, monkeypatch):
         "stopLossPct: 0.02\n"
     )
     monkeypatch.setenv("STRATEGY_CONFIG_PATH", str(path))
+    # Isolate the optimization log too, so tests never read or write the real
+    # data/optimizations.json (which would pollute the repo and cross-test state).
+    monkeypatch.setenv("OPTIMIZATIONS_LOG_PATH", str(tmp_path / "optimizations.json"))
     return path
 
 
