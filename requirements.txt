@@ -21,9 +21,11 @@ sqlalchemy>=2.0.0
 # Analysis (Pandas/numpy, no TA-Lib in production for now)
 pandas>=2.1.0
 numpy>=1.25.0
+matplotlib>=3.7.0  # equity-curve / drawdown plots (src/strategy/equity_curve.py)
 
 # Sentiment (OpenCode AI sentiment goes over HTTP via `requests`, above)
 vaderSentiment>=3.3.2
+feedparser>=6.0.0  # RSS news sentiment source (src/data/sentiment/sources/rss.py)
 
 # Dashboard
 pydantic>=2.5.0
