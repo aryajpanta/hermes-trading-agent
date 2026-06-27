@@ -26,6 +26,18 @@ from src.execution.reporting import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _isolate_portfolio_path(tmp_path, monkeypatch):
+    """Point PaperTrader at a fresh temp file for every test.
+
+    PaperTrader auto-loads ``data/paper_portfolio.json`` on construction, so
+    without this the suite would read (and write) the real on-disk portfolio
+    and fail whenever live state exists. The temp file does not exist, so
+    construction yields a clean ``starting_capital`` portfolio.
+    """
+    monkeypatch.setenv("PAPER_PORTFOLIO_PATH", str(tmp_path / "paper_portfolio.json"))
+
+
 # ---------------------------------------------------------------------------
 # Position tests
 # ---------------------------------------------------------------------------
