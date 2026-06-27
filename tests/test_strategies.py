@@ -148,7 +148,8 @@ class TestStrategy:
 class TestLibrary:
     def test_load_strategies(self) -> None:
         strategies = load_strategies()
-        assert len(strategies) == 15
+        # 15 technical strategies + sentiment_signal (AI news + X).
+        assert len(strategies) == 16
 
     def test_get_strategy(self) -> None:
         load_strategies()
@@ -165,7 +166,8 @@ class TestLibrary:
     def test_list_strategies_all(self) -> None:
         load_strategies()
         all_strategies = list_strategies()
-        assert len(all_strategies) == 15
+        # 15 technical strategies + sentiment_signal (AI news + X).
+        assert len(all_strategies) == 16
 
     def test_list_strategies_by_category(self) -> None:
         load_strategies()

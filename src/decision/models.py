@@ -29,14 +29,16 @@ class RiskConfig:
         fixed_risk_per_trade: Fixed fractional risk per trade (fallback).
     """
 
-    max_position_pct: float = 0.05
-    max_portfolio_risk: float = 0.02
-    max_correlated_positions: int = 3
-    min_confidence: float = 0.6
-    min_strategies_agreeing: int = 2
+    # Aggressive defaults — favors taking trades over sitting in cash.
+    # Tune down for a more conservative posture.
+    max_position_pct: float = 0.10        # was 0.05 — bigger size per trade
+    max_portfolio_risk: float = 0.04      # was 0.02 — allow more daily drawdown
+    max_correlated_positions: int = 6     # was 3 — more concurrent positions
+    min_confidence: float = 0.30          # was 0.60 — act on weaker conviction
+    min_strategies_agreeing: int = 1      # was 2 — a single strategy can trigger
     max_holding_period_days: int = 30
     stop_loss_atr_multiple: float = 2.0
-    fixed_risk_per_trade: float = 0.01
+    fixed_risk_per_trade: float = 0.02    # was 0.01 — larger fallback sizing
 
 
 @dataclass

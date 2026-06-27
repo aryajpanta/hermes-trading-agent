@@ -21,7 +21,9 @@ def fresh_settings(monkeypatch):
     monkeypatch.delenv("ALPACA_API_KEY_ID", raising=False)
     monkeypatch.delenv("ALPACA_SECRET_KEY", raising=False)
     monkeypatch.delenv("ALPACA_SECRET", raising=False)
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENCODE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENCODE_MODEL", raising=False)
+    monkeypatch.delenv("OPENCODE_REASONING_EFFORT", raising=False)
     monkeypatch.delenv("WEBHOOK_SECRET", raising=False)
     monkeypatch.delenv("ENABLE_AUTOMATION", raising=False)
     monkeypatch.delenv("AUTOMATION_INTERVAL_MS", raising=False)
@@ -55,13 +57,21 @@ class TestAlpaca:
         assert fresh_settings.alpaca_paper is False
 
 
-class TestGemini:
+class TestOpenCode:
     def test_unconfigured(self, fresh_settings):
-        assert fresh_settings.gemini_configured is False
+        assert fresh_settings.opencode_configured is False
 
     def test_configured(self, fresh_settings, monkeypatch):
-        monkeypatch.setenv("GEMINI_API_KEY", "abc123")
-        assert fresh_settings.gemini_configured is True
+        monkeypatch.setenv("OPENCODE_API_KEY", "abc123")
+        assert fresh_settings.opencode_configured is True
+
+    def test_default_model(self, fresh_settings):
+        assert fresh_settings.opencode_model == "mimo-v2.5"
+        assert fresh_settings.opencode_reasoning_effort == "high"
+
+    def test_model_override(self, fresh_settings, monkeypatch):
+        monkeypatch.setenv("OPENCODE_MODEL", "claude-haiku-4-5")
+        assert fresh_settings.opencode_model == "claude-haiku-4-5"
 
 
 class TestWebhook:
@@ -91,12 +101,12 @@ class TestAutomation:
 class TestValidation:
     def test_warnings_when_unconfigured(self, fresh_settings):
         warnings = fresh_settings.validate()
-        assert len(warnings) == 3  # alpaca, gemini, webhook
+        assert len(warnings) == 3  # alpaca, opencode, webhook
 
     def test_no_warnings_when_configured(self, fresh_settings, monkeypatch):
         monkeypatch.setenv("ALPACA_API_KEY_ID", "id")
         monkeypatch.setenv("ALPACA_SECRET_KEY", "sec")
-        monkeypatch.setenv("GEMINI_API_KEY", "gem")
+        monkeypatch.setenv("OPENCODE_API_KEY", "oc")
         monkeypatch.setenv("WEBHOOK_SECRET", "shh")
         warnings = fresh_settings.validate()
         assert warnings == []
@@ -107,6 +117,6 @@ class TestSummary:
         s = fresh_settings.summary()
         assert "server" in s
         assert "alpaca" in s
-        assert "gemini" in s
+        assert "opencode" in s
         assert "webhook" in s
         assert "automation" in s

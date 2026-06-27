@@ -14,6 +14,21 @@ logger = logging.getLogger("decision_engine")
 _decision_logs: List[DecisionLog] = []
 
 
+def _json_default(o: Any) -> Any:
+    """JSON fallback for non-native types (e.g. numpy bool_/float64/int64).
+
+    numpy scalars from strategy math (e.g. ``np_float >= threshold`` yields a
+    numpy.bool_) aren't JSON-serializable; coerce them to native Python types.
+    """
+    item = getattr(o, "item", None)
+    if callable(item):
+        try:
+            return o.item()
+        except Exception:
+            pass
+    return str(o)
+
+
 def log_decision(
     symbol: str,
     input_data: Dict[str, Any],
@@ -73,7 +88,7 @@ def log_decision(
         ),
         "reasoning": reasoning,
     }
-    logger.info("Decision: %s", json.dumps(log_data))
+    logger.info("Decision: %s", json.dumps(log_data, default=_json_default))
 
     return entry
 

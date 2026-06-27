@@ -28,13 +28,22 @@ sources:
     client_secret: ""
     user_agent: "TradingIntelligence/1.0"
     
-  twitter:
-    enabled: false  # requires API access
-    bearer_token: ""
-    search_queries:
-      - "$AAPL"
-      - "$TSLA"
-      - "$BTC"
+  x:  # X / Twitter — no official API; two scraping backends
+    enabled: true
+    backend: "nitter"   # "nitter" (zero-install RSS) | "cli" (agent-reach twitter-cli)
+    # Backend "nitter": public mirrors (often blocked); override via X_NITTER_INSTANCES.
+    instances:
+      - "https://nitter.net"
+      - "https://nitter.poast.org"
+      - "https://nitter.privacydev.net"
+    # Backend "cli": agent-reach — pipx install twitter-cli + burner-account cookies.
+    cli_bin: "twitter"  # or "opencli"
+    # Optional high-signal finance accounts to also pull from (nitter backend).
+    accounts:
+      - "DeItaone"
+      - "FirstSquawk"
+      - "unusual_whales"
+    max_age_hours: 24
 
 scoring:
   engagement_weight: 0.3  # weight of engagement in final score

@@ -179,6 +179,13 @@ def evaluate(
             symbol=symbol,
         )
 
+    # Bridge the symbol to strategies that need it (e.g. sentiment) without
+    # changing the evaluate(data) signature. Harmless metadata for the rest.
+    try:
+        data.attrs["symbol"] = symbol
+    except Exception:
+        pass
+
     signal = strategy.evaluate(data)
     signal.symbol = symbol
     return signal

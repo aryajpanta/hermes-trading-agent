@@ -31,6 +31,26 @@ DEFAULT_REVIEW_INTERVAL_S = 86_400.0  # 24h
 
 CYCLE_LOG_PATH = Path("data/cycles.json")
 
+# ── Autonomous entry scan ───────────────────────────────────
+# How often the tick loop runs the DecisionEngine to OPEN new positions.
+# Decoupled from the (fast) tick interval so we don't hammer the data APIs.
+ENTRY_SCAN_INTERVAL_S = (
+    int(os.environ.get("ENTRY_SCAN_INTERVAL_MS", 900_000)) / 1000.0  # 15 min
+)
+# Max new positions opened in a single scan (cap risk per scan).
+MAX_NEW_ENTRIES_PER_SCAN = int(os.environ.get("MAX_NEW_ENTRIES_PER_SCAN", 3))
+# History window fed to the strategies (long enough for 200-period MAs).
+ENTRY_SCAN_PERIOD = os.environ.get("ENTRY_SCAN_PERIOD", "1y")
+# Set ENABLE_AUTO_ENTRIES=false to keep the loop in manage-only mode.
+_AUTO_ENTRIES_ENABLED = os.environ.get("ENABLE_AUTO_ENTRIES", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+    "on",
+)
+
+_last_entry_scan: float = 0.0
+
 
 # ── Cycle log ───────────────────────────────────────────────
 
@@ -57,6 +77,135 @@ def _append_cycle(entry: Dict[str, Any], max_keep: int = 500) -> None:
 def get_cycles(limit: int = 50) -> List[Dict[str, Any]]:
     arr = _load_cycles()
     return arr[-limit:][::-1]  # newest first
+
+
+# ── Autonomous entries (the part that actually opens trades) ──
+
+
+def _portfolio_equity(trader: PaperTrader, prices: Dict[str, float]) -> float:
+    """Total equity = cash + marked-to-market value of open positions."""
+    equity = float(trader.portfolio.cash)
+    for pos in trader.portfolio.positions:
+        if str(pos.status.value).lower() != "open":
+            continue
+        px = prices.get(pos.symbol) or float(getattr(pos, "entry_price", 0.0))
+        equity += float(getattr(pos, "quantity", 0.0)) * px
+    return equity
+
+
+def _scan_and_enter(
+    trader: PaperTrader, watchlist: List[str], prices: Dict[str, float]
+) -> List[Dict[str, Any]]:
+    """Run the DecisionEngine over the watchlist and open new positions.
+
+    Throttled to ENTRY_SCAN_INTERVAL_S. Skips symbols already held, caps the
+    number of new entries per scan, and respects available cash (PaperTrader
+    auto-sizes down to affordable quantity).
+    """
+    global _last_entry_scan
+
+    if not _AUTO_ENTRIES_ENABLED:
+        return []
+
+    now = time.time()
+    if now - _last_entry_scan < ENTRY_SCAN_INTERVAL_S:
+        return []
+    _last_entry_scan = now
+
+    import pandas as pd
+
+    from src.data.sources.yahoo import YahooFinanceSource
+    from src.decision.engine import DecisionEngine
+    from src.decision.models import Direction
+
+    held = {
+        p.symbol
+        for p in trader.portfolio.positions
+        if str(p.status.value).lower() == "open"
+    }
+    equity = _portfolio_equity(trader, prices)
+    engine = DecisionEngine()
+    source = YahooFinanceSource()
+    entries: List[Dict[str, Any]] = []
+
+    for sym in watchlist:
+        if len(entries) >= MAX_NEW_ENTRIES_PER_SCAN:
+            break
+        if sym in held:
+            continue
+        price = prices.get(sym)
+        if not price or price <= 0:
+            continue
+        try:
+            records = source.fetch_ohlcv(sym, period=ENTRY_SCAN_PERIOD, interval="1d")
+            if len(records) < 30:
+                continue
+            df = pd.DataFrame(
+                [
+                    {
+                        "open": m.open,
+                        "high": m.high,
+                        "low": m.low,
+                        "close": m.close,
+                        "volume": m.volume,
+                    }
+                    for m in records
+                ]
+            )
+            result = engine.analyze(sym, df, portfolio_value=equity)
+            rec = getattr(result, "recommendation", None)
+            if rec is None or rec.direction == Direction.HOLD:
+                continue
+            if rec.position_size_pct <= 0:
+                continue
+
+            qty = (rec.position_size_pct * equity) / price
+            if qty <= 0:
+                continue
+
+            pos = trader.execute_signal(
+                {
+                    "symbol": sym,
+                    "direction": rec.direction.value,
+                    "quantity": qty,
+                    "price": price,
+                    "stop_loss": rec.stop_loss,
+                    "take_profit": rec.take_profit,
+                    "strategy_id": "decision_engine",
+                    "confidence": rec.confidence,
+                }
+            )
+            if pos:
+                entries.append(
+                    {
+                        "symbol": sym,
+                        "direction": rec.direction.value,
+                        "quantity": round(qty, 8),
+                        "price": price,
+                        "confidence": round(rec.confidence, 3),
+                        "size_pct": round(rec.position_size_pct, 4),
+                        "reason": (rec.reasoning or "")[:160],
+                    }
+                )
+                logger.info(
+                    "[entry] %s %s qty=%.6f @ %.4f (conf %.2f)",
+                    rec.direction.value,
+                    sym,
+                    qty,
+                    price,
+                    rec.confidence,
+                )
+        except Exception as e:
+            logger.warning("entry scan %s failed: %s", sym, e)
+            continue
+
+    if entries:
+        try:
+            trader.save_to_disk()
+        except Exception as e:
+            logger.error("save_to_disk after entries failed: %s", e)
+
+    return entries
 
 
 # ── Tick logic (sync, called from async wrapper) ─────────────
@@ -143,13 +292,23 @@ def run_tick(
     except Exception as e:
         logger.error(f"Alert monitor failed: {e}")
 
-    # 5. Cycle log
+    # 5. Autonomous entries — run the DecisionEngine and open new positions
+    #    (throttled internally to ENTRY_SCAN_INTERVAL_S).
+    opened: List[Dict[str, Any]] = []
+    if prices and not dry_run:
+        try:
+            opened = _scan_and_enter(trader, wl, prices)
+        except Exception as e:
+            logger.error(f"Entry scan failed: {e}")
+
+    # 6. Cycle log
     duration = time.time() - started
     cycle = {
         "type": "tick",
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "duration_s": round(duration, 3),
         "prices": prices,
+        "opened_positions": opened,
         "closed_positions": closed,
         "alerts_checked": alerts_result.get("checked", 0),
         "alerts_triggered": len(alerts_result.get("triggered", [])),

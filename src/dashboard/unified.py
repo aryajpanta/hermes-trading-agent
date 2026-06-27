@@ -421,18 +421,18 @@ async def api_alpaca_sync() -> Dict[str, Any]:
 
 @router.get("/sentiment/{symbol}")
 async def api_sentiment(symbol: str) -> Dict[str, Any]:
-    """Per-symbol sentiment (Gemini AI if configured)."""
-    from src.sentiment.gemini import GeminiSentiment
+    """Per-symbol sentiment (OpenCode AI if configured)."""
+    from src.sentiment.opencode import OpenCodeSentiment
 
-    g = GeminiSentiment()
-    if not g.is_configured:
+    analyzer = OpenCodeSentiment()
+    if not analyzer.is_configured:
         return {
             "symbol": symbol.upper(),
             "sentimentScore": 0.0,
             "confidence": 0.0,
-            "reason": "GEMINI_API_KEY not configured",
+            "reason": "OPENCODE_API_KEY not configured",
         }
-    return {"symbol": symbol.upper(), **g.fetch_sentiment(symbol)}
+    return {"symbol": symbol.upper(), **analyzer.fetch_sentiment(symbol)}
 
 
 # ── Migration helpers (one-time) ───────────────────────────

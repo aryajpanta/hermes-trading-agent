@@ -7,7 +7,7 @@
 Single Python service that:
 - Collects market data from yfinance, CoinGecko, Binance, and AlphaVantage
 - Runs 15 strategies from YAML configs
-- Uses FinBERT + VADER + optional Gemini AI for sentiment
+- Uses FinBERT + VADER + optional OpenCode AI for sentiment
 - Manages paper + live (approval-gated) Alpaca trading
 - Runs a continuous 60s tick loop for SL/TP monitoring
 - Has a self-improve loop (daily review + parameter optimizer)
@@ -41,7 +41,7 @@ src/
 ├── decision/            # Signal aggregation, risk, position sizing
 ├── execution/           # Paper + live executor, emergency stop
 ├── learning/            # Performance tracking, regime detection
-├── sentiment/           # FinBERT + VADER + Gemini
+├── sentiment/           # FinBERT + VADER + OpenCode AI
 ├── strategy/            # 15 strategy implementations + library
 ├── tradingview/         # Webhook receiver
 ├── dashboard/           # FastAPI dashboard + API

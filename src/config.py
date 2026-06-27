@@ -4,7 +4,7 @@ Single source of truth for env vars + YAML settings. Used by:
 - ``src/main.py`` (startup validation)
 - ``src/broker/alpaca.py`` (env override)
 - ``src/automation/scheduler.py`` (intervals, enable flag)
-- ``src/sentiment/gemini.py`` (API key)
+- ``src/sentiment/opencode.py`` (API key, model)
 - ``src/tradingview/webhook.py`` (secret)
 
 Pydantic v2 Settings with sensible defaults that match the existing
@@ -88,14 +88,22 @@ class Settings:
     def alpaca_configured(self) -> bool:
         return bool(self.alpaca_key and self.alpaca_secret)
 
-    # ── Gemini ──
+    # ── OpenCode (AI news sentiment) ──
     @property
-    def gemini_api_key(self) -> str:
-        return os.environ.get("GEMINI_API_KEY", "")
+    def opencode_api_key(self) -> str:
+        return os.environ.get("OPENCODE_API_KEY", "")
 
     @property
-    def gemini_configured(self) -> bool:
-        return bool(self.gemini_api_key)
+    def opencode_model(self) -> str:
+        return os.environ.get("OPENCODE_MODEL", "mimo-v2.5")
+
+    @property
+    def opencode_reasoning_effort(self) -> str:
+        return os.environ.get("OPENCODE_REASONING_EFFORT", "high")
+
+    @property
+    def opencode_configured(self) -> bool:
+        return bool(self.opencode_api_key)
 
     # ── TradingView webhook ──
     @property
@@ -148,9 +156,9 @@ class Settings:
             warnings.append(
                 "ALPACA_API_KEY_ID/ALPACA_SECRET_KEY not set — broker features disabled"
             )
-        if not self.gemini_configured:
+        if not self.opencode_configured:
             warnings.append(
-                "GEMINI_API_KEY not set — sentiment analysis returns neutral"
+                "OPENCODE_API_KEY not set — sentiment analysis returns neutral"
             )
         if not self.webhook_configured:
             warnings.append(
@@ -165,7 +173,11 @@ class Settings:
                 "configured": self.alpaca_configured,
                 "paper": self.alpaca_paper,
             },
-            "gemini": {"configured": self.gemini_configured},
+            "opencode": {
+                "configured": self.opencode_configured,
+                "model": self.opencode_model,
+                "reasoning_effort": self.opencode_reasoning_effort,
+            },
             "webhook": {"configured": self.webhook_configured},
             "automation": {
                 "enabled": self.automation_enabled,

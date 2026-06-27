@@ -143,11 +143,12 @@ def _clear_logs():
 class TestModels:
     def test_risk_config_defaults(self) -> None:
         rc = RiskConfig()
-        assert rc.max_position_pct == 0.05
-        assert rc.max_portfolio_risk == 0.02
-        assert rc.max_correlated_positions == 3
-        assert rc.min_confidence == 0.6
-        assert rc.min_strategies_agreeing == 2
+        # Aggressive defaults — favors taking trades over sitting in cash.
+        assert rc.max_position_pct == 0.10
+        assert rc.max_portfolio_risk == 0.04
+        assert rc.max_correlated_positions == 6
+        assert rc.min_confidence == 0.30
+        assert rc.min_strategies_agreeing == 1
         assert rc.max_holding_period_days == 30
         assert rc.stop_loss_atr_multiple == 2.0
 
@@ -286,8 +287,13 @@ class TestSignalAggregation:
         assert direction_from_signal(0.5) == Direction.BUY
         assert direction_from_signal(-0.5) == Direction.SELL
         assert direction_from_signal(0.0) == Direction.HOLD
-        assert direction_from_signal(0.05) == Direction.HOLD
-        assert direction_from_signal(-0.05) == Direction.HOLD
+        # Default dead-band is ±0.02 (aggressive): a modest lean now acts.
+        assert direction_from_signal(0.01) == Direction.HOLD
+        assert direction_from_signal(-0.01) == Direction.HOLD
+        assert direction_from_signal(0.05) == Direction.BUY
+        assert direction_from_signal(-0.05) == Direction.SELL
+        # Dead-band is overridable per call.
+        assert direction_from_signal(0.05, deadband=0.1) == Direction.HOLD
 
 
 # ---------------------------------------------------------------------------
@@ -420,7 +426,13 @@ class TestRiskManagement:
                 PortfolioPosition(symbol="META", sector="technology"),
             ]
         )
-        result = check_correlation("AAPL", "technology", portfolio)
+        # Pin the limit so this exercises the mechanism, not the default.
+        result = check_correlation(
+            "AAPL",
+            "technology",
+            portfolio,
+            risk_config=RiskConfig(max_correlated_positions=3),
+        )
         assert result.passed is False
         assert "already has 3 positions" in result.reason
 
@@ -508,7 +520,7 @@ class TestDecisionLogging:
 class TestDecisionEngine:
     def test_engine_creation(self) -> None:
         engine = DecisionEngine()
-        assert engine.risk_config.min_confidence == 0.6
+        assert engine.risk_config.min_confidence == 0.30
         assert len(engine.portfolio.positions) == 0
 
     def test_engine_with_custom_config(self) -> None:
@@ -797,3 +809,35 @@ class TestFullPipeline:
         explanation = engine.explain(result)
         assert "AAPL" in explanation
         assert "0.200" in explanation or "20" in explanation
+
+
+class TestDecisionLogging:
+    """Decision-log JSON serialization must survive numpy scalar types."""
+
+    def test_json_default_coerces_numpy(self):
+        import numpy as np
+        from src.decision.logging import _json_default
+
+        assert _json_default(np.bool_(True)) is True
+        assert _json_default(np.float64(0.5)) == 0.5
+        assert _json_default(np.int64(3)) == 3
+
+    def test_log_decision_with_numpy_does_not_raise(self):
+        import numpy as np
+        from src.decision.logging import log_decision
+
+        # numpy bools/floats (as produced by `np_float >= threshold`) must not
+        # crash the JSON log line.
+        entry = log_decision(
+            symbol="BTC",
+            input_data={"atr": np.float64(1.23)},
+            strategy_signals=[],
+            aggregated_direction=np.float64(-0.1),
+            aggregated_confidence=np.float64(0.64),
+            confidence_check=np.bool_(True),
+            agreement_check=np.bool_(False),
+            risk_checks={"all_passed": np.bool_(True)},
+            recommendation=None,
+            reasoning="numpy smoke test",
+        )
+        assert entry.symbol == "BTC"

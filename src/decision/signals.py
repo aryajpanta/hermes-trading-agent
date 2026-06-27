@@ -1,5 +1,6 @@
 """Signal aggregation — combines signals from multiple strategies weighted by performance."""
 
+import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
@@ -58,9 +59,10 @@ def aggregate_signals(
     if performance is None:
         performance = {}
 
+    # ── Pass 1: weighted net direction + per-strategy weights ──
     weighted_direction = 0.0
-    weighted_confidence = 0.0
     total_weight = 0.0
+    weights: List[float] = []
 
     for sig in signals:
         if sig.strategy_id not in performance:
@@ -75,8 +77,8 @@ def aggregate_signals(
             perf = performance[sig.strategy_id]
 
         weight = perf.weight
+        weights.append(weight)
         weighted_direction += sig.direction * sig.confidence * weight
-        weighted_confidence += sig.confidence * weight
         total_weight += weight
 
     if total_weight == 0:
@@ -87,20 +89,22 @@ def aggregate_signals(
             disagreeing=[],
         )
 
-    agg_direction = weighted_direction / total_weight
-    agg_confidence = weighted_confidence / total_weight
-
     # Clamp direction to [-1, 1]
-    agg_direction = max(-1.0, min(1.0, agg_direction))
-    # Clamp confidence to [0, 1]
-    agg_confidence = max(0.0, min(1.0, agg_confidence))
+    agg_direction = max(-1.0, min(1.0, weighted_direction / total_weight))
+    agg_sign = 1.0 if agg_direction > 0 else (-1.0 if agg_direction < 0 else 0.0)
 
-    # Determine agreeing vs disagreeing
+    # ── Pass 2: classify, and pool confidence over the AGREEING side only ──
+    # Confidence should reflect the conviction of the strategies that actually
+    # back the consensus direction — NOT a dilute average across every strategy
+    # (most of which are neutral on any given bar). Averaging over all strategies
+    # crushes a real single-strategy signal far below any usable threshold.
     agreeing: List[str] = []
     disagreeing: List[str] = []
     details: List[Dict[str, object]] = []
+    agree_conf_weighted = 0.0
+    agree_weight = 0.0
 
-    for sig in signals:
+    for idx, sig in enumerate(signals):
         is_neutral = abs(sig.direction) < neutral_threshold
         if is_neutral:
             # Neutral signals neither agree nor disagree strongly
@@ -115,10 +119,11 @@ def aggregate_signals(
             continue
 
         sig_direction_sign = 1.0 if sig.direction > 0 else -1.0
-        agg_sign = 1.0 if agg_direction > 0 else (-1.0 if agg_direction < 0 else 0.0)
 
-        if sig_direction_sign == agg_sign or agg_direction == 0.0:
+        if sig_direction_sign == agg_sign or agg_sign == 0.0:
             agreeing.append(sig.strategy_id)
+            agree_conf_weighted += sig.confidence * weights[idx]
+            agree_weight += weights[idx]
             details.append(
                 {
                     "strategy_id": sig.strategy_id,
@@ -138,6 +143,12 @@ def aggregate_signals(
                 }
             )
 
+    agg_confidence = (
+        agree_conf_weighted / agree_weight if agree_weight > 0 else 0.0
+    )
+    # Clamp confidence to [0, 1]
+    agg_confidence = max(0.0, min(1.0, agg_confidence))
+
     return AggregatedSignal(
         direction=agg_direction,
         confidence=agg_confidence,
@@ -148,17 +159,27 @@ def aggregate_signals(
     )
 
 
-def direction_from_signal(direction_value: float) -> Direction:
+# Dead-band around zero net direction that still counts as HOLD. Aggressive:
+# the weighted net direction is diluted across ~15 strategies, so a genuine
+# lean lands around ±0.03–0.06. A wide band (the old ±0.1) reads almost
+# everything as HOLD. Override with DIRECTION_DEADBAND.
+DIRECTION_DEADBAND = float(os.environ.get("DIRECTION_DEADBAND", "0.02"))
+
+
+def direction_from_signal(
+    direction_value: float, deadband: float = DIRECTION_DEADBAND
+) -> Direction:
     """Convert a numeric direction to a Direction enum.
 
     Args:
         direction_value: Numeric direction (-1.0 to +1.0).
+        deadband: Magnitude below which the net lean is treated as HOLD.
 
     Returns:
         Direction.BUY, Direction.SELL, or Direction.HOLD.
     """
-    if direction_value > 0.1:
+    if direction_value > deadband:
         return Direction.BUY
-    elif direction_value < -0.1:
+    elif direction_value < -deadband:
         return Direction.SELL
     return Direction.HOLD

@@ -1,0 +1,23 @@
+id: sentiment_signal
+name: "AI News + X Sentiment"
+source: "OpenCode MiMo V2.5 (news + X/Twitter)"
+description: "Directional vote from AI-scored news headlines and X/Twitter posts."
+category: sentiment
+timeframes:
+  - 1d
+  - 4h
+  - 1h
+assets:
+  - stocks
+  - crypto
+  - forex
+entry_rules:
+  - "Aggregate sentiment score is clearly bullish or bearish"
+  - "Model confidence is sufficient"
+exit_rules:
+  - "Sentiment flips against the open position"
+stop_loss_pct: 0.04
+take_profit_pct: 0.08
+position_size_pct: 0.05
+max_holding_period: 7
+min_confidence: 0.3
