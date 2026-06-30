@@ -21,9 +21,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app
 COPY . .
 
-# Persistent data
+# Persistent data — Railway already mounts a Volume at /app/data,
+# so the Dockerfile must NOT declare its own VOLUME (Railway rejects
+# this at build validation). The mkdir is still safe to keep.
 RUN mkdir -p /app/data
-VOLUME ["/app/data"]
 
 # Health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
