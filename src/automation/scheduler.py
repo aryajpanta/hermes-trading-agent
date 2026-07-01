@@ -277,9 +277,14 @@ def run_tick(
                 if sl and price <= sl:
                     trader._close_position(pos, price, "stop_loss")
                     closed.append({"symbol": pos.symbol, "reason": "stop_loss", "price": price})
+                    # Notify learning orchestrator
+                    from src.learning.integration import notify_close
+                    notify_close(pos.symbol, price, getattr(pos, "strategy_id", ""))
                 elif tp and price >= tp:
                     trader._close_position(pos, price, "take_profit")
                     closed.append({"symbol": pos.symbol, "reason": "take_profit", "price": price})
+                    from src.learning.integration import notify_close
+                    notify_close(pos.symbol, price, getattr(pos, "strategy_id", ""))
         except Exception as e:
             logger.error(f"SL/TP check failed: {e}")
 

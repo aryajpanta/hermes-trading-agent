@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Learning · Trading Intelligence{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1>🧠 Learning</h1>
+    <p class="subtitle">
+        Online model status, feature importances, and validation gate history.
+        Continuously retrains on every <span x-text="retrainEveryN">N</span> closed trades.
+    </p>
+</section>
+
+<div x-data="learningData()" x-init="init()" class="learning-grid">
+
+    <!-- Status Card -->
+    <div class="card">
+        <h2>Status</h2>
+        <div class="kv">
+            <div class="kv-row">
+                <span class="kv-key">Enabled</span>
+                <span class="kv-val" x-text="status.enabled ? '✓ yes' : '✗ no'"></span>
+            </div>
+            <template x-if="!status.enabled">
+                <div class="kv-row">
+                    <span class="kv-key">Reason</span>
+                    <span class="kv-val" x-text="status.reason || ''"></span>
+                </div>
+            </template>
+            <template x-if="status.enabled">
+                <div>
+                    <div class="kv-row">
+                        <span class="kv-key">Model loaded</span>
+                        <span class="kv-val" x-text="status.model_loaded ? '✓' : '✗ (awaiting data)'"></span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Closed trades recorded</span>
+                        <span class="kv-val" x-text="status.closed_trade_count"></span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Min trades for first retrain</span>
+                        <span class="kv-val" x-text="status.min_trades_for_retrain"></span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Retrain cadence</span>
+                        <span class="kv-val">every <span x-text="status.retrain_every_n"></span> trades</span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Last retrain</span>
+                        <span class="kv-val" x-text="lastRetrainFormatted"></span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Current Sharpe</span>
+                        <span class="kv-val" x-text="status.current_sharpe.toFixed(3)"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Current Weights -->
+    <div class="card">
+        <h2>Current Strategy Weights</h2>
+        <p class="hint" x-show="!status.current_weights || Object.keys(status.current_weights).length === 0">
+            No weights published yet. Need <span x-text="status.min_trades_for_retrain"></span>+
+            closed trades for the first retrain.
+        </p>
+        <table x-show="status.current_weights && Object.keys(status.current_weights).length > 0">
+            <thead>
+                <tr><th>Strategy</th><th>Weight</th><th>Bar</th></tr>
+            </thead>
+            <tbody>
+                <template x-for="[name, w] in Object.entries(status.current_weights || {})" :key="name">
+                    <tr>
+                        <td x-text="name"></td>
+                        <td x-text="(w * 100).toFixed(1) + '%'"></td>
+                        <td>
+                            <div class="weight-bar-bg">
+                                <div class="weight-bar" :style="'width:' + (w * 100) + '%'"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Feature Importances -->
+    <div class="card full-width">
+        <h2>Feature Importances</h2>
+        <p class="hint">What the model has learned matters for predicting trade PnL.
+        Higher = more important. Updates after each retrain.
+        </p>
+        <div class="feature-bars">
+            <template x-for="[name, imp] in Object.entries(features.feature_importance || {})" :key="name">
+                <div class="feature-row">
+                    <span class="feature-name" x-text="name"></span>
+                    <div class="feature-bar-bg">
+                        <div class="feature-bar" :style="'width:' + (imp / maxImportance * 100) + '%'"></div>
+                    </div>
+                    <span class="feature-val" x-text="imp.toFixed(1)"></span>
+                </div>
+            </template>
+            <p class="empty" x-show="!features.feature_importance || Object.keys(features.feature_importance).length === 0">
+                No features yet — model not trained.
+            </p>
+        </div>
+    </div>
+
+    <!-- Gate Log -->
+    <div class="card full-width">
+        <h2>Validation Gate History</h2>
+        <p class="hint">Decisions on whether to publish new strategy weights.
+        Green = accepted, red = rejected, gray = within tolerance.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Decision</th>
+                    <th>Current Sharpe</th>
+                    <th>Candidate Sharpe</th>
+                    <th>Δ%</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="d in gateLog.decisions || []" :key="d.timestamp">
+                    <tr :class="d.accepted ? 'gate-ok' : 'gate-bad'">
+                        <td x-text="new Date(d.timestamp * 1000).toLocaleString()"></td>
+                        <td x-text="d.accepted ? '✓' : '✗'"></td>
+                        <td x-text="d.current_sharpe.toFixed(3)"></td>
+                        <td x-text="d.candidate_sharpe.toFixed(3)"></td>
+                        <td x-text="(d.pct_change * 100).toFixed(1) + '%'"></td>
+                        <td x-text="d.reason"></td>
+                    </tr>
+                </template>
+                <tr x-show="!gateLog.decisions || gateLog.decisions.length === 0">
+                    <td colspan="6" class="empty">No gate decisions yet — first retrain pending.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.learning-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+.card { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; }
+.card h2 { margin-top: 0; }
+.card.full-width { grid-column: 1 / -1; }
+.kv-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #2a2a3a; }
+.kv-row:last-child { border-bottom: none; }
+.kv-key { color: #888; }
+.kv-val { font-weight: 600; }
+.hint { color: #888; font-size: 0.9em; margin: 0.5rem 0 1rem 0; }
+.weight-bar-bg { background: #2a2a3a; height: 8px; border-radius: 4px; overflow: hidden; min-width: 120px; }
+.weight-bar { background: #4ade80; height: 100%; }
+.feature-row { display: grid; grid-template-columns: 200px 1fr 60px; align-items: center; padding: 0.25rem 0; gap: 0.5rem; }
+.feature-name { font-family: monospace; font-size: 0.9em; }
+.feature-bar-bg { background: #2a2a3a; height: 6px; border-radius: 3px; overflow: hidden; }
+.feature-bar { background: #60a5fa; height: 100%; }
+.feature-val { font-family: monospace; font-size: 0.85em; color: #888; text-align: right; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #2a2a3a; }
+th { color: #888; font-weight: 500; font-size: 0.85em; }
+.gate-ok { background: rgba(74, 222, 128, 0.05); }
+.gate-bad { background: rgba(248, 113, 113, 0.05); }
+.empty { color: #666; text-align: center; padding: 1rem; font-style: italic; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function learningData() {
+    return {
+        status: { enabled: false, current_weights: {} },
+        features: { feature_importance: {} },
+        gateLog: { decisions: [] },
+        maxImportance: 1.0,
+        get retrainEveryN() { return this.status.retrain_every_n || 5; },
+        get lastRetrainFormatted() {
+            if (!this.status.last_retrain_ts) return 'never';
+            return new Date(this.status.last_retrain_ts * 1000).toLocaleString();
+        },
+        async init() {
+            await this.refresh();
+            setInterval(() => this.refresh(), 30000);  // 30s refresh
+        },
+        async refresh() {
+            try {
+                const [s, f, g] = await Promise.all([
+                    fetch('/api/learning/status').then(r => r.json()),
+                    fetch('/api/learning/features').then(r => r.json()),
+                    fetch('/api/learning/gate-log?limit=20').then(r => r.json()),
+                ]);
+                this.status = s;
+                this.features = f;
+                this.gateLog = g;
+                // Compute max for bar scaling
+                const vals = Object.values(f.feature_importance || {});
+                this.maxImportance = vals.length ? Math.max(...vals) : 1.0;
+            } catch (e) {
+                console.error('learning refresh failed:', e);
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

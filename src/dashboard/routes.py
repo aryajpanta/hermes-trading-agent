@@ -52,3 +52,9 @@ async def trades_page(request: Request) -> Any:
 async def settings_page(request: Request) -> Any:
     """Settings page."""
     return templates.TemplateResponse(request, "settings.html", _ctx(request, page="settings"))
+
+
+@router.get("/learning", response_class=HTMLResponse)
+async def learning_page(request: Request) -> Any:
+    """Learning page — model status, feature importances, gate decisions."""
+    return templates.TemplateResponse(request, "learning.html", _ctx(request, page="learning"))

@@ -37,3 +37,7 @@ alpaca-py>=0.21.0
 
 # Utilities
 click>=8.1.7
+
+# Unified learning (added 2026-06-30)
+lightgbm>=4.0
+pyarrow>=14.0

@@ -46,13 +46,36 @@ def get_scheduler_status() -> dict:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage app startup/shutdown — start the automation scheduler."""
+    """Manage app startup/shutdown — start the automation scheduler + learning orchestrator."""
     global _scheduler
 
     from src.automation.scheduler import AutomationScheduler
+    from src.learning.orchestrator import LearningOrchestrator
+    from src.learning.integration import set_orchestrator, is_learning_enabled
 
     _scheduler = AutomationScheduler()
     await _scheduler.start()
+
+    # Attach the learning orchestrator. Disabled with LEARNER_DISABLED=1.
+    if not is_learning_enabled():
+        try:
+            orch = LearningOrchestrator(
+                retrain_every_n=int(os.environ.get("LEARNER_RETRAIN_EVERY_N", 5)),
+                data_dir=os.environ.get("LEARNER_DATA_DIR", "data/learning"),
+                min_trades_for_retrain=int(
+                    os.environ.get("LEARNER_MIN_TRADES", 20)
+                ),
+            )
+            set_orchestrator(orch)
+            logger.info(
+                "[main] learning orchestrator attached (min_trades=%d, retrain_every_n=%d)",
+                orch.min_trades, orch.scheduler.retrain_every_n,
+            )
+        except Exception as e:
+            logger.warning("[main] learning orchestrator failed to attach: %s", e)
+    else:
+        logger.info("[main] learning disabled (LEARNER_DISABLED=1)")
+
     logger.info("[main] startup complete — unified trading system live")
     try:
         yield
@@ -88,6 +111,53 @@ async def health() -> dict:
         "service": "unified-trading-intelligence",
         "version": app.version,
     }
+
+
+# ── Learning endpoints (orchestrator status + features) ──
+
+
+@app.get("/api/learning/status", tags=["learning"])
+async def learning_status() -> dict:
+    """Return current learning orchestrator status (model state, weights, etc)."""
+    from src.learning.integration import get_orchestrator
+    orch = get_orchestrator()
+    if orch is None:
+        return {
+            "enabled": False,
+            "reason": "no orchestrator attached (LEARNER_DISABLED=1 or startup error)",
+        }
+    return {"enabled": True, **orch.status()}
+
+
+@app.get("/api/learning/features", tags=["learning"])
+async def learning_features() -> dict:
+    """Return the feature schema and current model feature importances."""
+    from src.learning.features.schema import FEATURE_COLUMNS, LABEL_COLUMN
+    from src.learning.integration import get_orchestrator
+    orch = get_orchestrator()
+    importance = orch.learner.feature_importance() if orch is not None else {}
+    sorted_imp = dict(
+        sorted(importance.items(), key=lambda x: x[1], reverse=True)
+    )
+    return {
+        "feature_columns": FEATURE_COLUMNS,
+        "label_column": LABEL_COLUMN,
+        "feature_importance": sorted_imp,
+    }
+
+
+@app.get("/api/learning/gate-log", tags=["learning"])
+async def learning_gate_log(limit: int = 20) -> dict:
+    """Return recent validation gate decisions (most recent first)."""
+    import json
+    from pathlib import Path
+    log_path = Path("data/learning/gate_log.jsonl")
+    if not log_path.exists():
+        return {"decisions": []}
+    with open(log_path) as f:
+        lines = f.readlines()
+    recent = [json.loads(l) for l in lines[-limit:]][::-1]
+    return {"decisions": recent}
 
 
 # ── Mount routers ──────────────────────────────────────────

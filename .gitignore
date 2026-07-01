@@ -49,3 +49,6 @@ node_modules/
 .env
 .env.local
 .env.production
+
+# Learning runtime state (regenerated on each deploy)
+data/learning/
